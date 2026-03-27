@@ -6,7 +6,6 @@ import { StepBrandVisual } from "@/components/onboarding/step-brand-visual";
 import { StepVoice } from "@/components/onboarding/step-voice";
 import { StepContentPillars } from "@/components/onboarding/step-content-pillars";
 import { Sparkles } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 
 const steps = [
   { label: "Niche", component: StepNiche },
@@ -56,17 +55,7 @@ export default function OnboardingPage() {
 
       {/* Content */}
       <div className="flex-1 px-6 py-12">
-        <AnimatePresence initial={false} mode="wait">
-          <motion.div
-            key={step}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            <CurrentStep />
-          </motion.div>
-        </AnimatePresence>
+        <CurrentStep key={step} />
       </div>
     </div>
   );

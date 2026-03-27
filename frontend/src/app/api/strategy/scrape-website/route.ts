@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getClient, FAST_MODEL } from "@/lib/content-engine";
+import { callClaude } from "@/lib/content-engine";
 
 export async function POST(request: Request) {
   try {
@@ -43,10 +43,7 @@ export async function POST(request: Request) {
     const extracted = extractPageData(html);
 
     // Use Claude to interpret the website data
-    const client = getClient();
-    const response = await client.messages.create({
-      model: FAST_MODEL,
-      max_tokens: 1024,
+    const text = await callClaude({
       system: `You extract structured business information from website HTML metadata and content snippets. Return ONLY valid JSON with these fields (use empty string "" if not found):
 {
   "businessName": "company/brand name",
@@ -56,16 +53,10 @@ export async function POST(request: Request) {
   "targetAudience": "who the business serves, if apparent",
   "industry": "industry/niche category"
 }`,
-      messages: [
-        {
-          role: "user",
-          content: `Extract business info from this website data:\n\nURL: ${normalizedUrl}\nTitle: ${extracted.title}\nMeta Description: ${extracted.description}\nOG Title: ${extracted.ogTitle}\nOG Description: ${extracted.ogDescription}\nKeywords: ${extracted.keywords}\nHeadings: ${extracted.headings.join(" | ")}\nBody snippet: ${extracted.bodySnippet}`,
-        },
-      ],
+      userMessage: `Extract business info from this website data:\n\nURL: ${normalizedUrl}\nTitle: ${extracted.title}\nMeta Description: ${extracted.description}\nOG Title: ${extracted.ogTitle}\nOG Description: ${extracted.ogDescription}\nKeywords: ${extracted.keywords}\nHeadings: ${extracted.headings.join(" | ")}\nBody snippet: ${extracted.bodySnippet}`,
+      model: "fast",
+      maxTokens: 1024,
     });
-
-    const text =
-      response.content[0].type === "text" ? response.content[0].text : "";
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json(

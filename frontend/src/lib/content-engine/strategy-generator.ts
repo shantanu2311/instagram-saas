@@ -1,8 +1,6 @@
-import { getClient, DEEP_MODEL, type GenerateStrategyRequest } from "./index";
+import { callClaude, type GenerateStrategyRequest } from "./index";
 
 export async function generateStrategy(req: GenerateStrategyRequest) {
-  const client = getClient();
-
   const systemPrompt = `You are a world-class Instagram growth strategist who has helped hundreds of brands grow from 0 to 100K+ followers. You create data-informed, actionable content strategies tailored to each brand's unique position.
 
 You analyze the business deeply and produce strategies that are specific, not generic. Every recommendation must be backed by a rationale tied to the brand's niche, audience, and competitive landscape.
@@ -96,15 +94,12 @@ PAIN POINTS: ${req.painPoints.join(", ")}
 BRAND PERSONALITY: ${req.brandPersonality.join(", ")}
 POSTING HISTORY: ${req.postingHistory || "New to Instagram"}`;
 
-  const response = await client.messages.create({
-    model: DEEP_MODEL,
-    max_tokens: 4096,
+  const text = await callClaude({
     system: systemPrompt,
-    messages: [{ role: "user", content: userMessage }],
+    userMessage,
+    model: "deep",
+    maxTokens: 4096,
   });
-
-  const text =
-    response.content[0].type === "text" ? response.content[0].text : "";
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {

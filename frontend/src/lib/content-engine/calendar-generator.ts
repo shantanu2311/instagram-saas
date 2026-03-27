@@ -1,12 +1,9 @@
 import {
-  getClient,
-  FAST_MODEL,
+  callClaude,
   type GenerateCalendarRequest,
 } from "./index";
 
 export async function generateCalendar(req: GenerateCalendarRequest) {
-  const client = getClient();
-
   const daysInMonth = new Date(req.year, req.month, 0).getDate();
   const pillarNames =
     req.strategy.contentPillars?.map((p) => p.name) || ["Education", "Entertainment", "Engagement"];
@@ -48,15 +45,12 @@ Return ONLY a JSON array of slot objects:
 
   const userMessage = `Generate a content calendar for ${req.brand.brandName || "this brand"} for ${req.month}/${req.year} (${daysInMonth} days). Schedule ${req.postsPerWeek} posts per week.`;
 
-  const response = await client.messages.create({
-    model: FAST_MODEL,
-    max_tokens: 4096,
+  const text = await callClaude({
     system: systemPrompt,
-    messages: [{ role: "user", content: userMessage }],
+    userMessage,
+    model: "fast",
+    maxTokens: 4096,
   });
-
-  const text =
-    response.content[0].type === "text" ? response.content[0].text : "";
 
   // Extract JSON array
   const jsonMatch = text.match(/\[[\s\S]*\]/);

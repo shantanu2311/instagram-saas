@@ -1,6 +1,5 @@
 import {
-  getClient,
-  FAST_MODEL,
+  callClaude,
   type GenerateContentRequest,
   type GenerateContentResult,
 } from "./index";
@@ -77,22 +76,12 @@ Return ONLY valid JSON with this exact structure:
 export async function generateCaption(
   req: GenerateContentRequest
 ): Promise<GenerateContentResult> {
-  const client = getClient();
-
-  const response = await client.messages.create({
-    model: FAST_MODEL,
-    max_tokens: 1024,
+  const text = await callClaude({
     system: buildSystemPrompt(req),
-    messages: [
-      {
-        role: "user",
-        content: `Create an Instagram ${req.contentType} post about: ${req.topic}`,
-      },
-    ],
+    userMessage: `Create an Instagram ${req.contentType} post about: ${req.topic}`,
+    model: "fast",
+    maxTokens: 1024,
   });
-
-  const text =
-    response.content[0].type === "text" ? response.content[0].text : "";
 
   // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);

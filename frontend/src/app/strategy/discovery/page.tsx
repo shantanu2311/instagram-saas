@@ -11,7 +11,6 @@ import { DiscoveryStepHistory } from "@/components/strategy/discovery-step-histo
 import { DiscoveryStepPersonality } from "@/components/strategy/discovery-step-personality";
 import { DiscoveryStepUsp } from "@/components/strategy/discovery-step-usp";
 import { Sparkles } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 
 const steps = [
   { label: "Type", component: DiscoveryStepAccountType },
@@ -73,17 +72,7 @@ export default function DiscoveryPage() {
 
       {/* Content */}
       <div className="flex-1 px-6 py-12">
-        <AnimatePresence initial={false} mode="wait">
-          <motion.div
-            key={discoveryStep}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-          >
-            <CurrentStep />
-          </motion.div>
-        </AnimatePresence>
+        <CurrentStep key={discoveryStep} />
       </div>
     </div>
   );
