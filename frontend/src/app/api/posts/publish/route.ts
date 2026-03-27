@@ -4,7 +4,16 @@ const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body is required." },
+        { status: 400 }
+      );
+    }
 
     const res = await fetch(`${BACKEND_URL}/posts/publish`, {
       method: "POST",

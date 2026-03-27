@@ -3,7 +3,18 @@ import { callClaude } from "@/lib/content-engine";
 
 export async function POST(request: Request) {
   try {
-    const { url } = await request.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body is required." },
+        { status: 400 }
+      );
+    }
+
+    const { url } = body;
 
     if (!url || typeof url !== "string") {
       return NextResponse.json({ error: "URL is required" }, { status: 400 });

@@ -30,7 +30,16 @@ interface BatchRequest {
  */
 export async function POST(request: Request) {
   try {
-    const body: BatchRequest = await request.json();
+    let body: BatchRequest;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body is required." },
+        { status: 400 }
+      );
+    }
+
     const { slots, brand, strategy } = body;
 
     if (!slots || slots.length === 0) {

@@ -25,6 +25,9 @@ export async function POST(request: Request) {
       );
     }
 
+    // Sanitize topic: strip HTML tags and truncate
+    body.topic = body.topic.replace(/<[^>]*>/g, "").slice(0, 500);
+
     // Build brand context from request
     const brand: BrandContext = {
       niche: body.niche || "",

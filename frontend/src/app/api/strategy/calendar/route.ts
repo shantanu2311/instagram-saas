@@ -3,7 +3,23 @@ import { generateCalendar, type BrandContext, type StrategyContext } from "@/lib
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!body || typeof body !== "object") {
+      return NextResponse.json(
+        { error: "Strategy data is required." },
+        { status: 400 }
+      );
+    }
 
     const now = new Date();
     const month = body.month || now.getMonth() + 1;

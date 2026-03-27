@@ -39,7 +39,7 @@ export default function DiscoveryPage() {
             </div>
             <span className="font-semibold">Strategy Discovery</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto">
             {steps.map((s, i) => (
               <div key={s.label} className="flex items-center">
                 <button
@@ -56,7 +56,7 @@ export default function DiscoveryPage() {
                 />
                 {i < steps.length - 1 && (
                   <div
-                    className={`h-px w-4 transition-colors ${
+                    className={`h-px w-2 sm:w-4 transition-colors ${
                       i < discoveryStep ? "bg-ig-pink" : "bg-muted"
                     }`}
                   />
