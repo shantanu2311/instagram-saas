@@ -3,7 +3,23 @@ import { generateStrategy } from "@/lib/content-engine";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!body.businessName && !body.businessDescription && !body.goals) {
+      return NextResponse.json(
+        { error: "Discovery data is required. Please complete the discovery questionnaire first." },
+        { status: 400 }
+      );
+    }
 
     const strategy = await generateStrategy({
       accountType: body.accountType || "business",

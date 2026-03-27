@@ -37,7 +37,7 @@ type GenerationTier = "standard" | "ai-enhanced";
 
 export default function StudioPage() {
   return (
-    <Suspense>
+    <Suspense fallback={null}>
       <StudioContent />
     </Suspense>
   );

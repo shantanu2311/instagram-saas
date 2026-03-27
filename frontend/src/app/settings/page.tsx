@@ -15,7 +15,7 @@ import { useOnboardingStore } from "@/lib/stores/onboarding-store";
 
 export default function SettingsPage() {
   return (
-    <Suspense>
+    <Suspense fallback={null}>
       <SettingsContent />
     </Suspense>
   );
@@ -26,6 +26,7 @@ function SettingsContent() {
   const [igConnected, setIgConnected] = useState(searchParams.get("ig_connected") === "true");
   const igError = searchParams.get("ig_error");
   const [saved, setSaved] = useState(false);
+  const [userName, setUserName] = useState("User");
 
   const handleSaveChanges = () => {
     setSaved(true);
@@ -75,12 +76,17 @@ function SettingsContent() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-xs">Name</Label>
-              <Input placeholder="Your name" />
+              <Label htmlFor="settings-name" className="text-xs">Name</Label>
+              <Input
+                id="settings-name"
+                placeholder="Your name"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs">Email</Label>
-              <Input placeholder="your@email.com" disabled />
+              <Label htmlFor="settings-email" className="text-xs">Email</Label>
+              <Input id="settings-email" placeholder="your@email.com" disabled />
             </div>
           </div>
           <Button size="sm" onClick={handleSaveChanges}>

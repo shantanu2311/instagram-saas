@@ -150,7 +150,12 @@ export function StepVoice() {
         <Button variant="ghost" onClick={prevStep}>
           Back
         </Button>
-        <Button onClick={nextStep} size="lg" className="px-12">
+        <Button
+          onClick={nextStep}
+          disabled={!brand.voiceDescription}
+          size="lg"
+          className="px-12"
+        >
           Continue
         </Button>
       </div>

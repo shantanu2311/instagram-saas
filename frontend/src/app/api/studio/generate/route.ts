@@ -7,7 +7,23 @@ import {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let body: any;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!body.topic || typeof body.topic !== "string" || !body.topic.trim()) {
+      return NextResponse.json(
+        { error: "A topic is required to generate content." },
+        { status: 400 }
+      );
+    }
 
     // Build brand context from request
     const brand: BrandContext = {
