@@ -51,7 +51,7 @@ export default function LandingPage() {
       <nav className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg ig-gradient flex items-center justify-center">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <span className="font-semibold text-lg">IGCreator</span>
@@ -73,12 +73,12 @@ export default function LandingPage() {
       <section className="flex-1 flex items-center justify-center px-6 py-24">
         <div className="max-w-3xl text-center space-y-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border/60 text-sm text-muted-foreground bg-muted/30">
-            <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+            <Sparkles className="h-3.5 w-3.5 text-ig-pink" />
             AI-powered Instagram content platform
           </div>
           <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.1]">
             Create Instagram content{" "}
-            <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#F58529] via-[#DD2A7B] to-[#8134AF] bg-clip-text text-transparent">
               on autopilot
             </span>
           </h1>
@@ -117,8 +117,8 @@ export default function LandingPage() {
                 key={f.title}
                 className="rounded-xl border border-border/40 bg-card p-6 space-y-3"
               >
-                <div className="h-10 w-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <f.icon className="h-5 w-5 text-purple-500" />
+                <div className="h-10 w-10 rounded-lg bg-ig-pink/10 flex items-center justify-center">
+                  <f.icon className="h-5 w-5 text-ig-pink" />
                 </div>
                 <h3 className="font-semibold">{f.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -194,12 +194,12 @@ export default function LandingPage() {
                 key={tier.name}
                 className={`rounded-xl border p-6 space-y-4 ${
                   "popular" in tier && tier.popular
-                    ? "border-purple-500 bg-purple-500/5 ring-1 ring-purple-500/20"
+                    ? "border-ig-pink bg-ig-pink/5 ring-1 ring-ig-pink/20"
                     : "border-border/40 bg-card"
                 }`}
               >
                 {"popular" in tier && tier.popular && (
-                  <span className="text-[11px] font-medium text-purple-500 uppercase tracking-wider">
+                  <span className="text-[11px] font-medium text-ig-pink uppercase tracking-wider">
                     Most Popular
                   </span>
                 )}
@@ -216,7 +216,7 @@ export default function LandingPage() {
                 <ul className="space-y-2 text-sm">
                   {tier.features.map((f) => (
                     <li key={f} className="flex items-center gap-2">
-                      <div className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-ig-pink" />
                       {f}
                     </li>
                   ))}
@@ -242,7 +242,7 @@ export default function LandingPage() {
       <footer className="border-t border-border/40 py-8 px-6">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <div className="h-6 w-6 rounded-md ig-gradient flex items-center justify-center">
               <Sparkles className="h-3 w-3 text-white" />
             </div>
             <span>IGCreator</span>

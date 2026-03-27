@@ -49,16 +49,16 @@ export function StepNiche() {
           <button
             key={n.id}
             onClick={() => updateBrand({ niche: n.id })}
-            className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all hover:border-purple-500/50 hover:bg-purple-500/5 ${
+            className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all hover:border-ig-pink/50 hover:bg-ig-pink/5 ${
               brand.niche === n.id
-                ? "border-purple-500 bg-purple-500/10 ring-1 ring-purple-500/30"
+                ? "border-ig-pink bg-ig-pink/10 ring-1 ring-ig-pink/30"
                 : "border-border/40"
             }`}
           >
             <n.icon
               className={`h-6 w-6 ${
                 brand.niche === n.id
-                  ? "text-purple-500"
+                  ? "text-ig-pink"
                   : "text-muted-foreground"
               }`}
             />

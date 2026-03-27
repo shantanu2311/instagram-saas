@@ -5,7 +5,7 @@ import { BarChart3, Eye, Heart, TrendingUp, Bookmark } from "lucide-react";
 
 const kpis = [
   { label: "Total Reach", value: "—", icon: Eye, color: "text-blue-500" },
-  { label: "Engagement Rate", value: "—", icon: Heart, color: "text-pink-500" },
+  { label: "Engagement Rate", value: "—", icon: Heart, color: "text-ig-orange" },
   { label: "Follower Growth", value: "—", icon: TrendingUp, color: "text-emerald-500" },
   { label: "Total Saves", value: "—", icon: Bookmark, color: "text-amber-500" },
 ];

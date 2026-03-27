@@ -58,10 +58,10 @@ export function StepVoice() {
                   voiceDescription: v.desc,
                 })
               }
-              className={`text-left rounded-xl border p-4 transition-all hover:border-purple-500/50 ${
+              className={`text-left rounded-xl border p-4 transition-all hover:border-ig-pink/50 ${
                 brand.toneFormality === v.formality &&
                 brand.toneHumor === v.humor
-                  ? "border-purple-500 bg-purple-500/10"
+                  ? "border-ig-pink bg-ig-pink/10"
                   : "border-border/40"
               }`}
             >
@@ -87,7 +87,7 @@ export function StepVoice() {
             onChange={(e) =>
               updateBrand({ toneFormality: Number(e.target.value) })
             }
-            className="w-full accent-purple-500"
+            className="w-full accent-ig-pink"
           />
         </div>
         <div className="space-y-3">
@@ -103,7 +103,7 @@ export function StepVoice() {
             onChange={(e) =>
               updateBrand({ toneHumor: Number(e.target.value) })
             }
-            className="w-full accent-pink-500"
+            className="w-full accent-ig-orange"
           />
         </div>
       </div>

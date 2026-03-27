@@ -11,10 +11,12 @@ import {
   Sparkles,
   CreditCard,
   Globe,
+  Lightbulb,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/strategy", label: "Strategy", icon: Lightbulb },
   { href: "/studio", label: "Content Studio", icon: Wand2 },
   { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
@@ -30,7 +32,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="px-4 py-4 border-b border-border/40">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+          <div className="h-8 w-8 rounded-lg ig-gradient flex items-center justify-center">
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           <span className="font-semibold">IGCreator</span>
@@ -49,7 +51,7 @@ export function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                 active
-                  ? "bg-purple-500/10 text-purple-500 font-medium"
+                  ? "bg-ig-pink/10 text-ig-pink font-medium"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
@@ -63,7 +65,7 @@ export function Sidebar() {
       {/* Account selector */}
       <div className="px-3 py-3 border-t border-border/40">
         <div className="flex items-center gap-2 rounded-lg bg-muted/30 px-3 py-2">
-          <Globe className="h-4 w-4 text-pink-500" />
+          <Globe className="h-4 w-4 text-ig-orange" />
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium truncate">@youraccount</p>
             <p className="text-[10px] text-muted-foreground">Connected</p>

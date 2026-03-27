@@ -123,15 +123,15 @@ export function StepContentPillars() {
               <button
                 key={p.id}
                 onClick={() => togglePillar(p.id)}
-                className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all hover:border-purple-500/50 ${
+                className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all hover:border-ig-pink/50 ${
                   selected
-                    ? "border-purple-500 bg-purple-500/10"
+                    ? "border-ig-pink bg-ig-pink/10"
                     : "border-border/40"
                 }`}
               >
                 <p.icon
                   className={`h-5 w-5 mt-0.5 shrink-0 ${
-                    selected ? "text-purple-500" : "text-muted-foreground"
+                    selected ? "text-ig-pink" : "text-muted-foreground"
                   }`}
                 />
                 <div>
@@ -156,8 +156,8 @@ export function StepContentPillars() {
               onClick={() => updateBrand({ postsPerWeek: n })}
               className={`flex-1 rounded-lg border py-3 text-center text-sm font-medium transition-all ${
                 brand.postsPerWeek === n
-                  ? "border-purple-500 bg-purple-500/10 text-purple-500"
-                  : "border-border/40 text-muted-foreground hover:border-purple-500/30"
+                  ? "border-ig-pink bg-ig-pink/10 text-ig-pink"
+                  : "border-border/40 text-muted-foreground hover:border-ig-pink/30"
               }`}
             >
               {n}x / week

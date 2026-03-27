@@ -106,14 +106,14 @@ export default function StudioPage() {
                     onClick={() => setContentType(ct.type)}
                     className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 transition-all ${
                       contentType === ct.type
-                        ? "border-purple-500 bg-purple-500/10"
-                        : "border-border/40 hover:border-purple-500/30"
+                        ? "border-ig-pink bg-ig-pink/10"
+                        : "border-border/40 hover:border-ig-pink/30"
                     }`}
                   >
                     <ct.icon
                       className={`h-5 w-5 ${
                         contentType === ct.type
-                          ? "text-purple-500"
+                          ? "text-ig-pink"
                           : "text-muted-foreground"
                       }`}
                     />
@@ -135,8 +135,8 @@ export default function StudioPage() {
                   onClick={() => setTier("standard")}
                   className={`flex items-start gap-2 rounded-lg border p-3 text-left transition-all ${
                     tier === "standard"
-                      ? "border-purple-500 bg-purple-500/10"
-                      : "border-border/40 hover:border-purple-500/30"
+                      ? "border-ig-pink bg-ig-pink/10"
+                      : "border-border/40 hover:border-ig-pink/30"
                   }`}
                 >
                   <Zap className="h-4 w-4 text-amber-500 mt-0.5" />
@@ -151,11 +151,11 @@ export default function StudioPage() {
                   onClick={() => setTier("ai-enhanced")}
                   className={`flex items-start gap-2 rounded-lg border p-3 text-left transition-all ${
                     tier === "ai-enhanced"
-                      ? "border-purple-500 bg-purple-500/10"
-                      : "border-border/40 hover:border-purple-500/30"
+                      ? "border-ig-pink bg-ig-pink/10"
+                      : "border-border/40 hover:border-ig-pink/30"
                   }`}
                 >
-                  <Sparkles className="h-4 w-4 text-purple-500 mt-0.5" />
+                  <Sparkles className="h-4 w-4 text-ig-pink mt-0.5" />
                   <div>
                     <p className="text-xs font-medium">AI-Enhanced</p>
                     <p className="text-[10px] text-muted-foreground">
@@ -210,8 +210,8 @@ export default function StudioPage() {
                         onClick={() => setSelectedPillar(p.id)}
                         className={`cursor-pointer text-[10px] ${
                           selectedPillar === p.id
-                            ? "bg-purple-500/10 border-purple-500/30 text-purple-400"
-                            : "hover:bg-purple-500/10 hover:border-purple-500/30"
+                            ? "bg-ig-pink/10 border-ig-pink/30 text-ig-pink"
+                            : "hover:bg-ig-pink/10 hover:border-ig-pink/30"
                         }`}
                       >
                         {p.label}
@@ -231,7 +231,7 @@ export default function StudioPage() {
                       <Badge
                         key={s}
                         variant="outline"
-                        className="cursor-pointer hover:bg-purple-500/10 hover:border-purple-500/30 text-[10px]"
+                        className="cursor-pointer hover:bg-ig-pink/10 hover:border-ig-pink/30 text-[10px]"
                       >
                         {s}
                       </Badge>
@@ -286,9 +286,9 @@ export default function StudioPage() {
               {result ? (
                 <div className="space-y-4">
                   {/* Image preview */}
-                  <div className="aspect-square rounded-lg bg-gradient-to-br from-purple-900 to-pink-900 flex items-center justify-center relative overflow-hidden">
+                  <div className="aspect-square rounded-lg bg-gradient-to-br from-rose-950 to-pink-900 flex items-center justify-center relative overflow-hidden">
                     <div className="text-center space-y-3 px-8">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-purple-300">
+                      <p className="text-[10px] uppercase tracking-[0.3em] text-pink-300">
                         {selectedPillar.replace("-", " ")}
                       </p>
                       <p className="text-xl font-bold text-white leading-tight">

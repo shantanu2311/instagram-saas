@@ -29,6 +29,10 @@ celery_app.conf.update(
             "task": "app.tasks.posting.process_scheduled_posts",
             "schedule": 60.0,  # every minute
         },
+        "refresh-strategy-trends": {
+            "task": "app.tasks.strategy.refresh_all_trends",
+            "schedule": 259200.0,  # every 3 days
+        },
     },
 )
 

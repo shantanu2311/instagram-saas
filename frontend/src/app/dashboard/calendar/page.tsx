@@ -48,9 +48,9 @@ export default function CalendarPage() {
                 key={i}
                 className={`min-h-[80px] rounded-lg border p-2 ${
                   day === today.getDate()
-                    ? "border-purple-500/50 bg-purple-500/5"
+                    ? "border-ig-pink/50 bg-ig-pink/5"
                     : day
-                    ? "border-border/30 hover:border-purple-500/20"
+                    ? "border-border/30 hover:border-ig-pink/20"
                     : "border-transparent"
                 }`}
               >
@@ -58,7 +58,7 @@ export default function CalendarPage() {
                   <span
                     className={`text-xs ${
                       day === today.getDate()
-                        ? "text-purple-500 font-bold"
+                        ? "text-ig-pink font-bold"
                         : "text-muted-foreground"
                     }`}
                   >

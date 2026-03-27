@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 
 const kpis = [
-  { label: "Posts This Week", value: "0 / 7", icon: ImageIcon, color: "text-purple-500" },
+  { label: "Posts This Week", value: "0 / 7", icon: ImageIcon, color: "text-ig-pink" },
   { label: "Total Reach", value: "—", icon: Eye, color: "text-blue-500" },
-  { label: "Engagement Rate", value: "—", icon: Heart, color: "text-pink-500" },
+  { label: "Engagement Rate", value: "—", icon: Heart, color: "text-ig-orange" },
   { label: "Follower Growth", value: "—", icon: TrendingUp, color: "text-emerald-500" },
 ];
 
@@ -61,10 +61,10 @@ export default function DashboardPage() {
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link href="/studio">
-          <Card className="border-border/40 hover:border-purple-500/30 transition-colors cursor-pointer h-full">
+          <Card className="border-border/40 hover:border-ig-pink/30 transition-colors cursor-pointer h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Wand2 className="h-4 w-4 text-purple-500" />
+                <Wand2 className="h-4 w-4 text-ig-pink" />
                 Content Studio
               </CardTitle>
             </CardHeader>
@@ -77,7 +77,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
         <Link href="/dashboard/calendar">
-          <Card className="border-border/40 hover:border-purple-500/30 transition-colors cursor-pointer h-full">
+          <Card className="border-border/40 hover:border-ig-pink/30 transition-colors cursor-pointer h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-blue-500" />
@@ -93,7 +93,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
         <Link href="/dashboard/analytics">
-          <Card className="border-border/40 hover:border-purple-500/30 transition-colors cursor-pointer h-full">
+          <Card className="border-border/40 hover:border-ig-pink/30 transition-colors cursor-pointer h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-emerald-500" />

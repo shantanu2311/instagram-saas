@@ -43,7 +43,7 @@ export default function SettingsPage() {
       <Card className="border-border/40">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Globe className="h-4 w-4 text-pink-500" />
+            <Globe className="h-4 w-4 text-ig-orange" />
             Instagram Account
           </CardTitle>
         </CardHeader>
@@ -63,7 +63,7 @@ export default function SettingsPage() {
       <Card className="border-border/40">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Palette className="h-4 w-4 text-purple-500" />
+            <Palette className="h-4 w-4 text-ig-pink" />
             Brand Settings
           </CardTitle>
         </CardHeader>

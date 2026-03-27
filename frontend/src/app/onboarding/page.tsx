@@ -25,7 +25,7 @@ export default function OnboardingPage() {
       <div className="border-b border-border/40 px-6 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg ig-gradient flex items-center justify-center">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
             <span className="font-semibold">IGCreator</span>
@@ -35,13 +35,13 @@ export default function OnboardingPage() {
               <div key={s.label} className="flex items-center">
                 <div
                   className={`h-2 w-2 rounded-full transition-colors ${
-                    i <= step ? "bg-purple-500" : "bg-muted"
+                    i <= step ? "bg-ig-pink" : "bg-muted"
                   }`}
                 />
                 {i < steps.length - 1 && (
                   <div
                     className={`h-px w-8 transition-colors ${
-                      i < step ? "bg-purple-500" : "bg-muted"
+                      i < step ? "bg-ig-pink" : "bg-muted"
                     }`}
                   />
                 )}

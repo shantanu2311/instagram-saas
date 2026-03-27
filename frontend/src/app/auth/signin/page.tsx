@@ -47,7 +47,7 @@ export default function SignInPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+          <div className="h-10 w-10 rounded-xl ig-gradient flex items-center justify-center">
             <Sparkles className="h-5 w-5 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Welcome back</h1>
@@ -110,7 +110,7 @@ export default function SignInPage() {
           Don&apos;t have an account?{" "}
           <Link
             href="/auth/signup"
-            className="font-medium text-purple-500 hover:text-purple-400 transition-colors"
+            className="font-medium text-ig-pink hover:text-ig-pink/80 transition-colors"
           >
             Sign up
           </Link>

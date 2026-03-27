@@ -51,10 +51,10 @@ export function StepBrandVisual() {
                   accentColor: p.accent,
                 })
               }
-              className={`flex items-center gap-3 rounded-lg border p-3 transition-all hover:border-purple-500/50 ${
+              className={`flex items-center gap-3 rounded-lg border p-3 transition-all hover:border-ig-pink/50 ${
                 brand.primaryColor === p.primary &&
                 brand.secondaryColor === p.secondary
-                  ? "border-purple-500 bg-purple-500/10"
+                  ? "border-ig-pink bg-ig-pink/10"
                   : "border-border/40"
               }`}
             >

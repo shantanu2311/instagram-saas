@@ -56,7 +56,7 @@ export default function BillingPage() {
               <span className="text-muted-foreground">0 / 3</span>
             </div>
             <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div className="h-full w-0 rounded-full bg-purple-500 transition-all" />
+              <div className="h-full w-0 rounded-full bg-ig-pink transition-all" />
             </div>
           </div>
         </CardContent>
@@ -66,7 +66,7 @@ export default function BillingPage() {
       <Card className="border-border/40">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-purple-500" />
+            <Sparkles className="h-4 w-4 text-ig-pink" />
             AI Credits
           </CardTitle>
         </CardHeader>
