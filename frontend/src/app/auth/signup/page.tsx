@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -36,8 +37,17 @@ export default function SignUpPage() {
         return;
       }
 
-      // Auto-redirect to sign in after successful registration
-      router.push("/auth/signin?registered=true");
+      // Auto-login after successful registration
+      const signInResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+      if (signInResult?.ok) {
+        router.push("/dashboard");
+      } else {
+        router.push("/auth/signin?registered=true");
+      }
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

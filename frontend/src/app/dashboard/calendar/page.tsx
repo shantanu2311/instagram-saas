@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/page-transition";
+import { useStrategyStore } from "@/lib/stores/strategy-store";
 
 const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -17,14 +18,36 @@ const dotColor: Record<string, string> = {
   carousel: "bg-ig-orange",
 };
 
+const pillarColorMap: Record<string, string> = {
+  Education: "bg-ig-pink",
+  Entertainment: "bg-blue-500",
+  Promotion: "bg-ig-orange",
+  Community: "bg-emerald-500",
+  Inspiration: "bg-amber-500",
+};
+
 export default function CalendarPage() {
   const [view, setView] = useState<CalendarView>("month");
+  const { calendar } = useStrategyStore();
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const monthName = today.toLocaleString("default", { month: "long" });
+
+  // Build slot lookup from strategy calendar
+  const slotMap = useMemo(() => {
+    const map: Record<number, any> = {};
+    if (calendar?.slots) {
+      calendar.slots.forEach((s) => {
+        map[s.day] = s;
+      });
+    }
+    return map;
+  }, [calendar]);
+
+  const hasSlots = calendar?.slots && calendar.slots.length > 0;
 
   const cells: (number | null)[] = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
@@ -138,32 +161,54 @@ export default function CalendarPage() {
                   {d}
                 </div>
               ))}
-              {cells.map((day, i) => (
-                <div
-                  key={i}
-                  className={`min-h-[80px] rounded-lg border p-2 transition-colors ${
-                    day === today.getDate()
-                      ? "border-ig-pink/50 bg-ig-pink/5"
-                      : day
-                      ? "border-border/30 hover:border-ig-pink/20"
-                      : "border-transparent"
-                  }`}
-                >
-                  {day && (
-                    <span
-                      className={`text-xs ${
-                        day === today.getDate()
-                          ? "text-ig-pink font-bold"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {day}
-                    </span>
-                  )}
-                </div>
-              ))}
+              {cells.map((day, i) => {
+                const slot = day ? slotMap[day] : null;
+                return (
+                  <div
+                    key={i}
+                    className={`min-h-[80px] rounded-lg border p-2 transition-colors ${
+                      day === today.getDate()
+                        ? "border-ig-pink/50 bg-ig-pink/5"
+                        : day
+                        ? "border-border/30 hover:border-ig-pink/20"
+                        : "border-transparent"
+                    }`}
+                  >
+                    {day && (
+                      <>
+                        <span
+                          className={`text-xs ${
+                            day === today.getDate()
+                              ? "text-ig-pink font-bold"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {day}
+                        </span>
+                        {slot && (
+                          <div className="mt-1 space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <span
+                                className={`h-2 w-2 rounded-full shrink-0 ${
+                                  pillarColorMap[slot.pillar] ?? "bg-ig-pink"
+                                }`}
+                              />
+                              <span className={`h-2 w-2 rounded-full shrink-0 ${
+                                dotColor[slot.contentType] ?? "bg-ig-pink"
+                              }`} />
+                            </div>
+                            <p className="text-[10px] leading-tight line-clamp-2">
+                              {slot.topic}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            <EmptyState />
+            {!hasSlots && <EmptyState />}
           </CardContent>
         </Card>
       )}
@@ -179,36 +224,49 @@ export default function CalendarPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-7 gap-2">
-              {weekDays.map((wd) => (
-                <div
-                  key={wd.name}
-                  className={`rounded-lg border p-3 min-h-[160px] ${
-                    wd.isToday
-                      ? "border-ig-pink/50 bg-ig-pink/5"
-                      : "border-border/30"
-                  }`}
-                >
-                  <div className="text-center mb-2">
-                    <p className="text-[10px] text-muted-foreground">
-                      {wd.name}
-                    </p>
-                    <p
-                      className={`text-sm font-medium ${
-                        wd.isToday ? "text-ig-pink" : ""
-                      }`}
-                    >
-                      {wd.date}
-                    </p>
+              {weekDays.map((wd) => {
+                const slot = slotMap[wd.date];
+                return (
+                  <div
+                    key={wd.name}
+                    className={`rounded-lg border p-3 min-h-[160px] ${
+                      wd.isToday
+                        ? "border-ig-pink/50 bg-ig-pink/5"
+                        : "border-border/30"
+                    }`}
+                  >
+                    <div className="text-center mb-2">
+                      <p className="text-[10px] text-muted-foreground">
+                        {wd.name}
+                      </p>
+                      <p
+                        className={`text-sm font-medium ${
+                          wd.isToday ? "text-ig-pink" : ""
+                        }`}
+                      >
+                        {wd.date}
+                      </p>
+                    </div>
+                    {slot ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1 justify-center">
+                          <span className={`h-2 w-2 rounded-full ${pillarColorMap[slot.pillar] ?? "bg-ig-pink"}`} />
+                          <span className={`h-2 w-2 rounded-full ${dotColor[slot.contentType] ?? "bg-ig-pink"}`} />
+                        </div>
+                        <p className="text-[10px] text-center leading-tight line-clamp-3">{slot.topic}</p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-16">
+                        <span className="text-[10px] text-muted-foreground/40">
+                          No posts
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center justify-center h-16">
-                    <span className="text-[10px] text-muted-foreground/40">
-                      No posts
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
-            <EmptyState />
+            {!hasSlots && <EmptyState />}
           </CardContent>
         </Card>
       )}

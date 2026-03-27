@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Circle, ArrowRight } from "lucide-react";
+import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+import { useStrategyStore } from "@/lib/stores/strategy-store";
 
 interface Step {
   label: string;
@@ -10,15 +12,18 @@ interface Step {
   href: string;
 }
 
-const steps: Step[] = [
-  { label: "Create account", done: true, href: "#" },
-  { label: "Connect Instagram", done: false, href: "/settings" },
-  { label: "Set up brand", done: false, href: "/settings" },
-  { label: "Create strategy", done: false, href: "/strategy" },
-  { label: "Create first post", done: false, href: "/studio" },
-];
-
 export function OnboardingChecklist() {
+  const { brand } = useOnboardingStore();
+  const { strategy } = useStrategyStore();
+
+  const steps: Step[] = [
+    { label: "Create account", done: true, href: "#" },
+    { label: "Connect Instagram", done: false, href: "/settings" },
+    { label: "Set up brand", done: !!brand.niche, href: "/onboarding" },
+    { label: "Create strategy", done: !!strategy, href: "/strategy" },
+    { label: "Create first post", done: false, href: "/studio" },
+  ];
+
   const completed = steps.filter((s) => s.done).length;
   const progress = (completed / steps.length) * 100;
 

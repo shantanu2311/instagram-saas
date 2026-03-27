@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -41,6 +42,8 @@ const kpis = [
 ];
 
 export default function DashboardPage() {
+  const { data: session } = useSession();
+  const userName = session?.user?.name || "Creator";
   // TODO: Check if user has connected Instagram / created strategy / posted content
   // For now, show new-user state
   const isNewUser = true;
@@ -52,7 +55,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">
-              {getGreeting()}, Creator!
+              {getGreeting()}, {userName}!
             </h1>
             <p className="text-sm text-muted-foreground">{formatDate()}</p>
           </div>

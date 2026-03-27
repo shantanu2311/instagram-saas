@@ -60,6 +60,7 @@ function BillingContent() {
 
   const [sub, setSub] = useState<Subscription | null>(null);
   const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [billingError, setBillingError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/billing/subscription")
@@ -72,6 +73,7 @@ function BillingContent() {
 
   const handleUpgrade = async (tierId: string) => {
     setUpgrading(tierId);
+    setBillingError(null);
     try {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
@@ -87,10 +89,10 @@ function BillingContent() {
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
       } else if (data.error) {
-        alert(data.error);
+        setBillingError(data.error);
       }
     } catch {
-      alert("Could not reach billing service");
+      setBillingError("Could not reach billing service. Please try again.");
     } finally {
       setUpgrading(null);
     }
@@ -125,6 +127,11 @@ function BillingContent() {
           <p className="text-sm text-amber-600 dark:text-amber-400">
             Checkout was cancelled. No changes were made.
           </p>
+        </div>
+      )}
+      {billingError && (
+        <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2 text-center">
+          {billingError}
         </div>
       )}
 

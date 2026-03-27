@@ -80,7 +80,12 @@ export function DiscoveryStepHistory() {
         <Button variant="outline" onClick={prevDiscoveryStep} size="lg">
           Back
         </Button>
-        <Button onClick={nextDiscoveryStep} size="lg" className="px-12">
+        <Button
+          onClick={nextDiscoveryStep}
+          disabled={!profile.postingHistory}
+          size="lg"
+          className="px-12"
+        >
           Continue
         </Button>
       </div>

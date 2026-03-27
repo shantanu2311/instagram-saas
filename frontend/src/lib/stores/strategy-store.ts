@@ -159,7 +159,7 @@ const defaultProfile: BusinessProfile = {
   competitors: [],
   goals: [],
   contentPreferences: [],
-  postingHistory: "new",
+  postingHistory: "",
   budgetTier: "free",
   usp: "",
   keyDifferentiators: [],

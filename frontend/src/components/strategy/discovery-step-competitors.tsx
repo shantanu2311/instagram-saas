@@ -70,7 +70,7 @@ export function DiscoveryStepCompetitors() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Add 1-5 competitor Instagram handles
+            Add 1-5 competitor Instagram handles. You can add competitors later.
           </p>
 
           {profile.competitors.length > 0 && (
@@ -105,11 +105,10 @@ export function DiscoveryStepCompetitors() {
         </Button>
         <Button
           onClick={nextDiscoveryStep}
-          disabled={profile.competitors.length < 1}
           size="lg"
           className="px-12"
         >
-          Continue
+          {profile.competitors.length > 0 ? "Continue" : "Skip for now"}
         </Button>
       </div>
     </div>

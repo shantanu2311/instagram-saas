@@ -22,6 +22,14 @@ import { GenerationProgress } from "@/components/studio/generation-progress";
 import { QualityRing } from "@/components/studio/quality-ring";
 import { PageTransition } from "@/components/page-transition";
 import { DraftHistory } from "@/components/studio/draft-history";
+import { useStrategyStore } from "@/lib/stores/strategy-store";
+import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  const match = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!match) return null;
+  return [parseInt(match[1], 16), parseInt(match[2], 16), parseInt(match[3], 16)];
+}
 
 type ContentType = "image" | "carousel" | "reel";
 type GenerationTier = "standard" | "ai-enhanced";
@@ -45,6 +53,11 @@ function StudioContent() {
   const [generating, setGenerating] = useState(false);
   const [posting, setPosting] = useState(false);
   const [postSuccess, setPostSuccess] = useState(false);
+  const [editedCaption, setEditedCaption] = useState("");
+  const [postError, setPostError] = useState<string | null>(null);
+  const [scheduleMsg, setScheduleMsg] = useState<string | null>(null);
+  const { strategy } = useStrategyStore();
+  const { brand: savedBrand } = useOnboardingStore();
   const [result, setResult] = useState<{
     imageUrl: string | null;
     caption: string;
@@ -52,6 +65,19 @@ function StudioContent() {
     quality_score: number;
     quality_criteria: Record<string, number>;
   } | null>(null);
+
+  const pillars = strategy?.contentPillars?.length
+    ? strategy.contentPillars.map((p) => ({
+        id: p.name.toLowerCase().replace(/\s+/g, "-"),
+        label: p.name,
+      }))
+    : [
+        { id: "facts", label: "Facts" },
+        { id: "education", label: "Education" },
+        { id: "behind-the-scenes", label: "Behind-the-Scenes" },
+        { id: "engagement", label: "Engagement" },
+        { id: "reels", label: "Reels" },
+      ];
 
   // Read query params for strategy calendar integration
   useEffect(() => {
@@ -63,6 +89,7 @@ function StudioContent() {
 
   const handlePostNow = async () => {
     if (!result) return;
+    setPostError(null);
     setPosting(true);
     try {
       const res = await fetch("/api/posts/publish", {
@@ -70,13 +97,13 @@ function StudioContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image_url: result.imageUrl,
-          caption: result.caption,
+          caption: editedCaption || result.caption,
           hashtags: result.hashtags,
         }),
       });
       const data = await res.json();
       if (data.error) {
-        alert("Instagram not connected. Connect your account in Settings to post.");
+        setPostError("Connect your Instagram account in Settings to post.");
       } else {
         setPostSuccess(true);
         try {
@@ -85,14 +112,14 @@ function StudioContent() {
         } catch {}
       }
     } catch {
-      alert("Could not publish. Make sure your Instagram account is connected.");
+      setPostError("Could not publish. Make sure your Instagram account is connected.");
     } finally {
       setPosting(false);
     }
   };
 
   const handleSchedule = () => {
-    alert("Scheduling coming soon! Your content has been saved as a draft.");
+    setScheduleMsg("Scheduling coming soon! Your content has been saved as a draft.");
   };
 
   const handleSaveDraft = async () => {
@@ -104,7 +131,7 @@ function StudioContent() {
         contentType,
         generationTier: tier,
         prompt,
-        caption: result.caption,
+        caption: editedCaption || result.caption,
         hashtags: result.hashtags,
         mediaUrls: result.imageUrl ? [result.imageUrl] : [],
         qualityScore: result.quality_score,
@@ -126,26 +153,29 @@ function StudioContent() {
           image_style: selectedTemplate || "fact_card",
           generation_tier: tier,
           brand: {
-            primary_color: [221, 42, 123],
-            secondary_color: [245, 133, 41],
-            accent_color: [129, 52, 175],
-            brand_name: "My Brand",
+            primary_color: hexToRgb(savedBrand.primaryColor) || [221, 42, 123],
+            secondary_color: hexToRgb(savedBrand.secondaryColor) || [245, 133, 41],
+            accent_color: hexToRgb(savedBrand.accentColor) || [129, 52, 175],
+            brand_name: savedBrand.brandHashtag?.replace("#", "") || "My Brand",
           },
         }),
       });
       const data = await res.json();
+      const captionText = data.caption || "Generated caption will appear here.";
       setResult({
         imageUrl: data.image_url || null,
-        caption: data.caption || "Generated caption will appear here.",
+        caption: captionText,
         hashtags: data.hashtags || ["#content", "#instagram", "#growth"],
         quality_score: data.quality_score || 87,
         quality_criteria: data.quality_criteria || {},
       });
+      setEditedCaption(captionText);
     } catch {
+      const fallbackCaption =
+        "The silent productivity killer nobody talks about...\n\nSleep deprivation costs the US economy $411 billion annually.";
       setResult({
         imageUrl: null,
-        caption:
-          "The silent productivity killer nobody talks about...\n\nSleep deprivation costs the US economy $411 billion annually.",
+        caption: fallbackCaption,
         hashtags: [
           "#productivity",
           "#sleep",
@@ -156,6 +186,7 @@ function StudioContent() {
         quality_score: 87,
         quality_criteria: {},
       });
+      setEditedCaption(fallbackCaption);
     } finally {
       setGenerating(false);
     }
@@ -302,16 +333,7 @@ function StudioContent() {
                 </TabsList>
                 <TabsContent value="pillar" className="mt-2">
                   <div className="flex flex-wrap gap-1.5">
-                    {[
-                      { id: "facts", label: "Facts" },
-                      { id: "education", label: "Education" },
-                      {
-                        id: "behind-the-scenes",
-                        label: "Behind-the-Scenes",
-                      },
-                      { id: "engagement", label: "Engagement" },
-                      { id: "reels", label: "Reels" },
-                    ].map((p) => (
+                    {pillars.map((p) => (
                       <Badge
                         key={p.id}
                         variant="outline"
@@ -429,16 +451,36 @@ function StudioContent() {
 
                   {/* Caption */}
                   <div className="space-y-2">
-                    <p className="text-xs font-medium">Caption</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium">Caption</p>
+                      <span className="text-[10px] text-muted-foreground">
+                        {editedCaption.length} / 2,200
+                      </span>
+                    </div>
                     <div className="rounded-lg border border-border/40 p-3">
-                      <p className="text-sm leading-relaxed whitespace-pre-line">
-                        {result.caption}
-                      </p>
+                      <textarea
+                        value={editedCaption}
+                        onChange={(e) => setEditedCaption(e.target.value)}
+                        className="w-full text-sm leading-relaxed bg-transparent border-0 resize-none focus:outline-none focus:ring-0 min-h-[80px]"
+                        rows={4}
+                      />
                       <p className="text-xs text-muted-foreground mt-2">
                         {result.hashtags.join(" ")}
                       </p>
                     </div>
                   </div>
+
+                  {/* Inline feedback banners */}
+                  {postError && (
+                    <div className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2 text-center">
+                      {postError}
+                    </div>
+                  )}
+                  {scheduleMsg && (
+                    <div className="text-sm text-ig-orange bg-ig-orange/10 rounded-lg px-3 py-2 text-center">
+                      {scheduleMsg}
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="flex gap-2">
