@@ -157,7 +157,11 @@ export default function ResearchPage() {
     }
   }, [researchStatus, setResearchStatus]);
 
-  const results = researchResults ?? mockResearchResults;
+  const results = researchResults ?? {
+    competitors: [],
+    trends: { hashtags: [], viralExamples: [], trendingFormats: [] },
+    insights: [],
+  };
 
   const handleGenerateStrategy = async () => {
     setGenerating(true);

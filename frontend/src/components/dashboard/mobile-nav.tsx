@@ -112,12 +112,12 @@ export function MobileNav() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">AI Credits</span>
-                  <span className="font-medium">50 remaining</span>
+                  <span className="font-medium text-muted-foreground">Free tier</span>
                 </div>
                 <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                   <div
                     className="h-full rounded-full ig-gradient"
-                    style={{ width: "25%" }}
+                    style={{ width: "0%" }}
                   />
                 </div>
               </div>
@@ -128,10 +128,10 @@ export function MobileNav() {
               <div className="flex items-center gap-2 rounded-lg bg-muted/30 px-3 py-2">
                 <Globe className="h-4 w-4 text-ig-orange" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">@youraccount</p>
-                  <p className="text-[10px] text-muted-foreground">Connected</p>
+                  <p className="text-xs font-medium truncate">No account</p>
+                  <p className="text-[10px] text-muted-foreground">Connect Instagram</p>
                 </div>
-                <div className="h-2 w-2 rounded-full bg-emerald-500" />
+                <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
               </div>
             </div>
           </SheetContent>

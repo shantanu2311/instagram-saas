@@ -77,23 +77,17 @@ export default function StrategyPage() {
     "bg-amber-500/10 text-amber-500",
   ];
 
-  const milestones = [
-    { label: "30-Day", progress: 0, kpi: "500 new followers" },
-    { label: "60-Day", progress: 0, kpi: "2% engagement rate" },
-    { label: "90-Day", progress: 0, kpi: "10K total followers" },
-  ];
+  const milestones = strategy.milestones
+    ? [
+        { label: "30-Day", progress: 0, kpi: strategy.milestones.day30?.followers ?? "Set goal" },
+        { label: "60-Day", progress: 0, kpi: strategy.milestones.day60?.engagement ?? "Set goal" },
+        { label: "90-Day", progress: 0, kpi: strategy.milestones.day90?.followers ?? "Set goal" },
+      ]
+    : [];
 
-  const trendInsights = [
-    { title: "Carousel posts are 3x more saved", category: "Format" },
-    { title: "Behind-the-scenes content trending", category: "Style" },
-    { title: "#authenticity up 45% this month", category: "Hashtag" },
-  ];
+  const trendInsights: { title: string; category: string }[] = [];
 
-  const upcomingSlots = calendar?.slots?.slice(0, 4) ?? [
-    { day: "Mon", type: "Carousel", topic: "Industry tips" },
-    { day: "Wed", type: "Reel", topic: "Behind the scenes" },
-    { day: "Fri", type: "Image", topic: "Motivational quote" },
-  ];
+  const upcomingSlots = calendar?.slots?.slice(0, 4) ?? [];
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">
@@ -141,21 +135,25 @@ export default function StrategyPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {upcomingSlots.map((slot: any, i: number) => (
+            {upcomingSlots.length > 0 ? upcomingSlots.map((slot: any, i: number) => (
               <div
                 key={i}
                 className="flex items-center gap-3 text-sm"
               >
                 <span className="text-xs font-medium text-muted-foreground w-8">
-                  {slot.day}
+                  {slot.day ?? slot.dayOfWeek}
                 </span>
                 <div className="h-2 w-2 rounded-full bg-ig-pink" />
                 <span className="text-xs text-muted-foreground">
-                  {slot.type}
+                  {slot.type ?? slot.contentType}
                 </span>
                 <span className="flex-1 truncate">{slot.topic}</span>
               </div>
-            ))}
+            )) : (
+              <p className="text-xs text-muted-foreground">
+                No calendar yet. Approve your strategy to generate a content calendar.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -168,7 +166,7 @@ export default function StrategyPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {milestones.map((m) => (
+            {milestones.length > 0 ? milestones.map((m) => (
               <div key={m.label} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium">{m.label}</span>
@@ -181,7 +179,11 @@ export default function StrategyPage() {
                   />
                 </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-xs text-muted-foreground">
+                Milestones will appear after your strategy is generated.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -194,7 +196,7 @@ export default function StrategyPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {trendInsights.map((t) => (
+            {trendInsights.length > 0 ? trendInsights.map((t) => (
               <div
                 key={t.title}
                 className="flex items-start gap-2 text-sm"
@@ -207,11 +209,11 @@ export default function StrategyPage() {
                   </span>
                 </div>
               </div>
-            ))}
-            <p className="text-[11px] text-muted-foreground pt-1">
-              <Clock className="h-3 w-3 inline mr-1" />
-              Next trend refresh: in 3 days
-            </p>
+            )) : (
+              <p className="text-xs text-muted-foreground">
+                Trend insights will appear once your strategy is active and we analyze your niche.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

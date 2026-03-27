@@ -75,11 +75,11 @@ function SettingsContent() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-xs">Name</Label>
-              <Input defaultValue="Dev User" />
+              <Input placeholder="Your name" />
             </div>
             <div className="space-y-2">
               <Label className="text-xs">Email</Label>
-              <Input defaultValue="dev@example.com" disabled />
+              <Input placeholder="your@email.com" disabled />
             </div>
           </div>
           <Button size="sm" onClick={handleSaveChanges}>

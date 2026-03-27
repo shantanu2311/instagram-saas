@@ -269,7 +269,7 @@ function StudioContent() {
               </div>
               {tier === "ai-enhanced" && (
                 <p className="text-[11px] text-muted-foreground">
-                  AI credits remaining: <strong>50</strong>
+                  Upgrade to Pro for AI credits.
                 </p>
               )}
             </CardContent>

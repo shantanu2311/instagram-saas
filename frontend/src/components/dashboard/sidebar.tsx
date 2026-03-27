@@ -78,12 +78,12 @@ export function Sidebar() {
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">AI Credits</span>
-            <span className="font-medium">50 remaining</span>
+            <span className="font-medium text-muted-foreground">Free tier</span>
           </div>
           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
             <div
               className="h-full rounded-full ig-gradient transition-all"
-              style={{ width: "25%" }}
+              style={{ width: "0%" }}
             />
           </div>
         </div>
