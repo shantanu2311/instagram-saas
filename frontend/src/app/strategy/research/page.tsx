@@ -114,6 +114,7 @@ const mockResearchResults = {
 export default function ResearchPage() {
   const router = useRouter();
   const {
+    profile,
     researchStatus,
     researchResults,
     setResearchStatus,
@@ -126,23 +127,25 @@ export default function ResearchPage() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [generating, setGenerating] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeStepRef = useRef(0);
 
   // Simulate research progress
   useEffect(() => {
     if (researchStatus !== "running") return;
 
     intervalRef.current = setInterval(() => {
-      setActiveStep((prev) => {
-        if (prev >= researchSteps.length - 1) {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          setResearchStatus("complete");
-          setResearchResults(mockResearchResults);
-          setResearchProgress(100);
-          return prev;
-        }
-        setCompletedSteps((cs) => [...cs, prev]);
-        return prev + 1;
-      });
+      const current = activeStepRef.current;
+      if (current >= researchSteps.length - 1) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setResearchStatus("complete");
+        setResearchResults(mockResearchResults);
+        setResearchProgress(100);
+        return;
+      }
+      const next = current + 1;
+      activeStepRef.current = next;
+      setCompletedSteps((cs) => [...cs, current]);
+      setActiveStep(next);
     }, 2500);
 
     return () => {
@@ -150,12 +153,18 @@ export default function ResearchPage() {
     };
   }, [researchStatus, setResearchStatus, setResearchResults, setResearchProgress]);
 
-  // If idle (direct navigation), start research simulation
+  // If idle (direct navigation), start research simulation — run only on mount
+  // Use startTransition to avoid setState-during-render in strict mode
+  const statusRef = useRef(researchStatus);
+  statusRef.current = researchStatus;
   useEffect(() => {
-    if (researchStatus === "idle") {
-      setResearchStatus("running");
+    if (statusRef.current === "idle") {
+      // Defer to avoid React strict-mode double-render conflicts
+      const id = setTimeout(() => setResearchStatus("running"), 0);
+      return () => clearTimeout(id);
     }
-  }, [researchStatus, setResearchStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const results = researchResults ?? {
     competitors: [],
@@ -169,7 +178,10 @@ export default function ResearchPage() {
       const res = await fetch("/api/strategy/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ researchResults: results }),
+        body: JSON.stringify({
+          ...profile,
+          researchResults: results,
+        }),
       });
       const data = await res.json();
       setStrategy(data);

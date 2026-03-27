@@ -3,11 +3,18 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+export type AccountType = "business" | "creator" | "personal";
+
 export interface BusinessProfile {
-  businessName: string;
-  businessDescription: string;
-  productService: string;
+  accountType: AccountType;
+  businessName: string; // Also used as creator name / personal name
+  businessDescription: string; // Also: what you create / what you're about
+  productService: string; // Also: niche/expertise / interests
   websiteUrl: string;
+  // Creator/personal-specific
+  instagramHandle: string;
+  ambition: string; // Where do you want to be in 6 months? What does success look like?
+  monetizationGoal: string; // How do you want to monetize (if at all)?
   targetAgeMin: number;
   targetAgeMax: number;
   targetDemographics: string[];
@@ -147,10 +154,14 @@ interface StrategyState {
 }
 
 const defaultProfile: BusinessProfile = {
+  accountType: "business",
   businessName: "",
   businessDescription: "",
   productService: "",
   websiteUrl: "",
+  instagramHandle: "",
+  ambition: "",
+  monetizationGoal: "",
   targetAgeMin: 18,
   targetAgeMax: 45,
   targetDemographics: [],
@@ -180,7 +191,7 @@ export const useStrategyStore = create<StrategyState>()(
 
       setDiscoveryStep: (step) => set({ discoveryStep: step }),
       nextDiscoveryStep: () =>
-        set((s) => ({ discoveryStep: Math.min(s.discoveryStep + 1, 7) })),
+        set((s) => ({ discoveryStep: Math.min(s.discoveryStep + 1, 8) })),
       prevDiscoveryStep: () =>
         set((s) => ({ discoveryStep: Math.max(s.discoveryStep - 1, 0) })),
       updateProfile: (updates) =>

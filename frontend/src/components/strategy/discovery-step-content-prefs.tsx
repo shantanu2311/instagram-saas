@@ -76,8 +76,13 @@ export function DiscoveryStepContentPrefs() {
         </div>
         <h2 className="text-2xl font-bold">What content style fits you?</h2>
         <p className="text-muted-foreground">
-          Select the styles that match your brand. Choose as many as you like.
+          Select the styles that match your brand. We recommend picking 2–3 for a focused strategy.
         </p>
+        {profile.contentPreferences.length > 0 && (
+          <p className={`text-xs font-medium ${profile.contentPreferences.length > 3 ? "text-amber-500" : "text-ig-pink"}`}>
+            {profile.contentPreferences.length} selected{profile.contentPreferences.length > 3 ? " — consider narrowing down for a more focused strategy" : ""}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

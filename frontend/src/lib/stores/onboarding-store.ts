@@ -23,6 +23,12 @@ export interface BrandConfig {
   postingDays: Record<string, string>; // "0"-"6" -> content type
   postsPerWeek: number;
   brandHashtag: string;
+  // Posting preference
+  // Automation level
+  automationLevel: "full-control" | "approve-posts" | "full-auto";
+  // full-control: preview design + approve scripts + approve posts
+  // approve-posts: auto-generate, review each post before posting
+  // full-auto: generate and post automatically per schedule
 }
 
 interface OnboardingState {
@@ -59,6 +65,7 @@ const defaultBrand: BrandConfig = {
   },
   postsPerWeek: 5,
   brandHashtag: "",
+  automationLevel: "approve-posts",
 };
 
 export const useOnboardingStore = create<OnboardingState>()(

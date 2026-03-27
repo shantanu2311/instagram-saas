@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Globe, Palette, User, Shield, CheckCircle2, AlertCircle } from "lucide-react";
+import { Globe, Palette, User, Shield, CheckCircle2, AlertCircle, Send } from "lucide-react";
 import { PageTransition } from "@/components/page-transition";
+import { useOnboardingStore } from "@/lib/stores/onboarding-store";
 
 export default function SettingsPage() {
   return (
@@ -133,6 +134,9 @@ function SettingsContent() {
         </CardContent>
       </Card>
 
+      {/* Posting Preferences */}
+      <PostingPreferenceCard />
+
       {/* Brand settings */}
       <Card className="border-border/40">
         <CardHeader className="pb-3">
@@ -176,5 +180,62 @@ function SettingsContent() {
       </Card>
     </div>
     </PageTransition>
+  );
+}
+
+function PostingPreferenceCard() {
+  const { brand, updateBrand } = useOnboardingStore();
+  const level = brand.automationLevel || "approve-posts";
+
+  const options = [
+    {
+      value: "full-control" as const,
+      label: "Full Control",
+      description: "Preview design, approve scripts, then approve each post",
+    },
+    {
+      value: "approve-posts" as const,
+      label: "Approve Posts",
+      description: "Auto-generate content, review each post before it goes live",
+    },
+    {
+      value: "full-auto" as const,
+      label: "Full Auto",
+      description: "Generate and post everything automatically per schedule",
+    },
+  ];
+
+  return (
+    <Card className="border-border/40">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Send className="h-4 w-4 text-ig-orange" />
+          Automation Level
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-xs text-muted-foreground">
+          Choose how much control you want over content generation and posting.
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => updateBrand({ automationLevel: opt.value })}
+              className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-all ${
+                level === opt.value
+                  ? "border-ig-pink bg-ig-pink/10"
+                  : "border-border/40 hover:border-ig-pink/30"
+              }`}
+            >
+              <p className="text-xs font-medium">{opt.label}</p>
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                {opt.description}
+              </p>
+            </button>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

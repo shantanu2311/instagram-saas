@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStrategyStore } from "@/lib/stores/strategy-store";
+import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+import { useQueueStore } from "@/lib/stores/queue-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,17 @@ import { motion } from "framer-motion";
 
 type SectionStatus = "pending" | "approved" | "rejected";
 
+function convertTimeToISO(time: string): string {
+  const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (!match) return "07:30:00";
+  let hours = parseInt(match[1]);
+  const minutes = match[2];
+  const period = match[3].toUpperCase();
+  if (period === "PM" && hours < 12) hours += 12;
+  if (period === "AM" && hours === 12) hours = 0;
+  return `${hours.toString().padStart(2, "0")}:${minutes}:00`;
+}
+
 const sectionDefs = [
   { key: "brandPositioning", label: "Brand Positioning", icon: Target },
   { key: "contentPillars", label: "Content Pillars", icon: Layout },
@@ -38,6 +51,7 @@ const sectionDefs = [
 export default function ReviewPage() {
   const router = useRouter();
   const { strategy, setStrategy, setCalendar } = useStrategyStore();
+  const { brand: savedBrand } = useOnboardingStore();
   const [sections, setSections] = useState<Record<string, SectionStatus>>({});
   const [approving, setApproving] = useState(false);
 
@@ -74,24 +88,174 @@ export default function ReviewPage() {
 
   const handleGenerateCalendar = async () => {
     setApproving(true);
+    const queueStore = useQueueStore.getState();
+
     try {
       // Approve strategy
       await fetch("/api/strategy/approve", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strategyId: strategy.id, sections }),
-      });
+      }).catch(() => {}); // Non-critical if approve endpoint isn't wired
 
-      // Generate calendar
+      // Build brand context for batch generation
+      const brandContext = {
+        niche: savedBrand.niche,
+        brandName: savedBrand.brandHashtag?.replace("#", "") || "",
+        primaryColor: savedBrand.primaryColor,
+        secondaryColor: savedBrand.secondaryColor,
+        accentColor: savedBrand.accentColor,
+        toneFormality: savedBrand.toneFormality,
+        toneHumor: savedBrand.toneHumor,
+        voiceDescription: savedBrand.voiceDescription,
+        sampleCaption: savedBrand.sampleCaption,
+        contentPillars: savedBrand.contentPillars,
+        brandHashtag: savedBrand.brandHashtag,
+      };
+
+      const strategyContext = {
+        contentPillars: strategy.contentPillars,
+        toneAndVoice: strategy.toneAndVoice,
+        hashtagStrategy: strategy.hashtagStrategy,
+        brandPositioning: strategy.brandPositioning,
+      };
+
+      // Generate calendar with full context
       const res = await fetch("/api/strategy/calendar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ strategyId: strategy.id }),
+        body: JSON.stringify({
+          strategyId: strategy.id,
+          ...brandContext,
+          postsPerWeek: savedBrand.postsPerWeek || 5,
+          strategy: strategyContext,
+        }),
       });
-      const data = await res.json();
-      setCalendar(data);
+      const calendarData = await res.json();
+      setCalendar(calendarData);
+
+      // Check automation level
+      const autoLevel = savedBrand.automationLevel || "approve-posts";
+
+      // Full-control: go to design preview first (no batch gen yet)
+      if (autoLevel === "full-control") {
+        setApproving(false);
+        router.push("/queue/preview");
+        return;
+      }
+
+      // Approve-posts or full-auto: start batch content generation
+      const slots = calendarData.slots || [];
+      if (slots.length > 0) {
+        // Add placeholder queue items for each slot
+        for (const slot of slots) {
+          queueStore.addItem({
+            id: `q-${slot.date}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            calendarSlotDate: slot.date,
+            pillar: slot.pillar,
+            contentType: slot.contentType || "image",
+            topic: slot.topic,
+            headline: slot.headline || slot.topic,
+            caption: "",
+            hashtags: [],
+            qualityScore: 0,
+            suggestedTime: slot.suggestedTime || "7:30 AM",
+            status: "generating",
+            createdAt: new Date().toISOString(),
+            scheduledFor: `${slot.date}T${slot.suggestedTime ? convertTimeToISO(slot.suggestedTime) : "07:30:00"}`,
+          });
+        }
+
+        queueStore.setBatchProgress({
+          total: slots.length,
+          completed: 0,
+          failed: 0,
+          inProgress: true,
+        });
+
+        // Navigate to queue immediately — generation happens in background
+        setApproving(false);
+        router.push("/queue");
+
+        // Stream batch generation results
+        const batchRes = await fetch("/api/studio/batch-generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slots,
+            brand: brandContext,
+            strategy: strategyContext,
+          }),
+        });
+
+        const reader = batchRes.body?.getReader();
+        const decoder = new TextDecoder();
+        const queueItems = queueStore.items.filter((i) => i.status === "generating");
+        let completed = 0;
+        let failed = 0;
+
+        if (reader) {
+          let buffer = "";
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete NDJSON lines
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const result = JSON.parse(line);
+                const qItem = queueItems[result.index];
+                if (!qItem) continue;
+
+                const autoLevel = savedBrand.automationLevel || "approve-posts";
+                const newStatus =
+                  result.status === "success"
+                    ? autoLevel === "full-auto"
+                      ? ("approved" as const)
+                      : ("pending_approval" as const)
+                    : ("failed" as const);
+
+                useQueueStore.getState().updateItem(qItem.id, {
+                  headline: result.headline || qItem.headline,
+                  caption: result.caption || "",
+                  hashtags: result.hashtags || [],
+                  qualityScore: result.qualityScore || 0,
+                  status: newStatus,
+                  error: result.error,
+                });
+
+                if (result.status === "success") completed++;
+                else failed++;
+
+                useQueueStore.getState().setBatchProgress({
+                  total: slots.length,
+                  completed: completed + failed,
+                  failed,
+                  inProgress: completed + failed < slots.length,
+                });
+              } catch {
+                // Skip malformed lines
+              }
+            }
+          }
+        }
+
+        useQueueStore.getState().setBatchProgress({
+          total: slots.length,
+          completed: completed + failed,
+          failed,
+          inProgress: false,
+        });
+
+        return; // Already navigated
+      }
     } catch {
-      // Mock calendar
+      // Mock calendar fallback
       setCalendar(buildMockCalendar());
     }
     setApproving(false);

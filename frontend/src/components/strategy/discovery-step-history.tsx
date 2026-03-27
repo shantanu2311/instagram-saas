@@ -8,25 +8,25 @@ const experienceLevels = [
   {
     id: "new",
     label: "Brand New",
-    description: "Starting fresh on Instagram (0 posts)",
+    description: "Starting fresh — 0 posts yet",
     icon: Sprout,
   },
   {
     id: "beginner",
-    label: "Beginner",
-    description: "Less than 50 posts, figuring things out",
+    label: "Getting Started",
+    description: "Under 50 posts, still figuring things out",
     icon: Clock,
   },
   {
-    id: "intermediate",
-    label: "Intermediate",
-    description: "100+ posts, some traction",
+    id: "growing",
+    label: "Growing",
+    description: "50–200 posts, building momentum",
     icon: TrendingUp,
   },
   {
     id: "established",
     label: "Established",
-    description: "500+ posts, growing audience",
+    description: "200+ posts, consistent presence",
     icon: Crown,
   },
 ];

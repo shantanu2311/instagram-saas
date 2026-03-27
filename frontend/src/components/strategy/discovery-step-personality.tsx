@@ -3,7 +3,7 @@
 import { useStrategyStore } from "@/lib/stores/strategy-store";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Palette } from "lucide-react";
+import { Palette, Sparkles } from "lucide-react";
 
 const personalityTraits = [
   "Bold",
@@ -30,7 +30,7 @@ export function DiscoveryStepPersonality() {
       updateProfile({
         brandPersonality: current.filter((t) => t !== trait),
       });
-    } else {
+    } else if (current.length < 5) {
       updateProfile({
         brandPersonality: [...current, trait],
       });
@@ -45,8 +45,13 @@ export function DiscoveryStepPersonality() {
         </div>
         <h2 className="text-2xl font-bold">Your brand personality</h2>
         <p className="text-muted-foreground">
-          What words describe your brand? Select all that apply.
+          Pick 2–5 words that describe your vibe. This shapes your content tone.
         </p>
+        {profile.brandPersonality.length > 0 && (
+          <p className="text-xs font-medium text-ig-pink">
+            {profile.brandPersonality.length} of 5 selected
+          </p>
+        )}
       </div>
 
       <Card>
@@ -72,16 +77,23 @@ export function DiscoveryStepPersonality() {
 
           <div className="space-y-1.5">
             <label className="text-sm font-medium">
-              What problems does your target audience face?
+              {profile.accountType === "business"
+                ? "What problems does your target audience face?"
+                : "What challenges do you face with Instagram?"}
             </label>
+            <p className="text-[11px] text-muted-foreground">Optional — one per line</p>
             <textarea
               value={profile.painPoints.join("\n")}
               onChange={(e) => {
                 const lines = e.target.value.split("\n");
                 updateProfile({ painPoints: lines });
               }}
-              placeholder="e.g., Not enough time to create content&#10;Don't know what to post&#10;Low engagement on posts"
-              rows={4}
+              placeholder={
+                profile.accountType === "business"
+                  ? "e.g., Not enough time to create content\nDon't know what to post\nLow engagement on posts"
+                  : "e.g., Struggling with consistency\nNot sure what my niche is\nDon't know how to grow"
+              }
+              rows={3}
               className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none"
             />
           </div>

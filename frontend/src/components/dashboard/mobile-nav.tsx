@@ -23,12 +23,14 @@ import {
   Globe,
   Lightbulb,
   Plus,
+  ListChecks,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/strategy", label: "Strategy", icon: Lightbulb },
   { href: "/studio", label: "Content Studio", icon: Wand2 },
+  { href: "/queue", label: "Content Queue", icon: ListChecks },
   { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },

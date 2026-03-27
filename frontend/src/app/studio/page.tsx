@@ -24,6 +24,7 @@ import { PageTransition } from "@/components/page-transition";
 import { DraftHistory } from "@/components/studio/draft-history";
 import { useStrategyStore } from "@/lib/stores/strategy-store";
 import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+import { useQueueStore } from "@/lib/stores/queue-store";
 
 function hexToRgb(hex: string): [number, number, number] | null {
   const match = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
@@ -81,7 +82,8 @@ function StudioContent() {
         { id: "reels", label: "Reels" },
       ];
 
-  // Read query params for strategy calendar integration
+  // Read query params for strategy calendar integration + queue replacement
+  const replaceId = searchParams.get("replaceId");
   useEffect(() => {
     const topic = searchParams.get("topic");
     const pillar = searchParams.get("pillar");
@@ -145,6 +147,20 @@ function StudioContent() {
   const handleGenerate = async () => {
     setGenerating(true);
     try {
+      // Build full context for AI generation
+      const strategyContext = strategy
+        ? {
+            brandPositioning: strategy.brandPositioning,
+            contentPillars: strategy.contentPillars?.map((p) => ({
+              name: p.name,
+              percentage: p.percentage,
+              rationale: p.rationale,
+            })),
+            toneAndVoice: strategy.toneAndVoice,
+            hashtagStrategy: strategy.hashtagStrategy,
+          }
+        : null;
+
       const res = await fetch("/api/studio/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -154,12 +170,20 @@ function StudioContent() {
           content_type: contentType,
           image_style: selectedTemplate || "fact_card",
           generation_tier: tier,
+          niche: savedBrand.niche,
+          brand_voice: savedBrand.voiceDescription,
+          sample_caption: savedBrand.sampleCaption,
+          tone_formality: savedBrand.toneFormality,
+          tone_humor: savedBrand.toneHumor,
+          content_pillars: savedBrand.contentPillars,
+          brand_hashtag: savedBrand.brandHashtag,
           brand: {
             primary_color: hexToRgb(savedBrand.primaryColor) || [221, 42, 123],
             secondary_color: hexToRgb(savedBrand.secondaryColor) || [245, 133, 41],
             accent_color: hexToRgb(savedBrand.accentColor) || [129, 52, 175],
             brand_name: savedBrand.brandHashtag?.replace("#", "") || "My Brand",
           },
+          strategy: strategyContext,
         }),
       });
       const data = await res.json();
@@ -499,7 +523,27 @@ function StudioContent() {
                       Schedule
                     </Button>
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
+                    {replaceId && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-ig-orange border-ig-orange/30 hover:bg-ig-orange/10"
+                        onClick={() => {
+                          // Replace the queue item with this generated content
+                          useQueueStore.getState().updateItem(replaceId, {
+                            headline: result.headline,
+                            caption: editedCaption || result.caption,
+                            hashtags: result.hashtags,
+                            qualityScore: result.quality_score,
+                            status: "pending_approval",
+                          });
+                          window.location.href = "/queue";
+                        }}
+                      >
+                        Replace in Queue
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={handleSaveDraft}>
                       Save Draft
                     </Button>

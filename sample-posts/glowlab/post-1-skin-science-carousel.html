@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GlowLab — Skin Science Carousel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #fafafa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; display: flex; justify-content: center; padding: 40px 20px; min-height: 100vh; }
+  .container { max-width: 480px; width: 100%; }
+  .meta-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 12px 16px; background: #1a1a1a; border-radius: 12px; }
+  .meta-bar .pillar { background: linear-gradient(135deg, #e1306c, #fd1d1d); color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .meta-bar .format { color: #888; font-size: 12px; }
+  .phone-frame { background: #000; border-radius: 24px; overflow: hidden; border: 2px solid #333; }
+  .header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #feda75, #fa7e1e, #d62976, #962fbf); display: flex; align-items: center; justify-content: center; }
+  .avatar span { background: #000; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; }
+  .handle { font-size: 13px; font-weight: 600; }
+  .carousel { position: relative; }
+  .slides { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .slides::-webkit-scrollbar { display: none; }
+  .slide { min-width: 100%; scroll-snap-align: start; aspect-ratio: 1; display: flex; flex-direction: column; justify-content: center; padding: 40px 32px; }
+  .slide-1 { background: linear-gradient(145deg, #1a0a00, #2d1810, #1a0a00); }
+  .slide-1 .emoji { font-size: 48px; margin-bottom: 16px; }
+  .slide-1 h2 { font-size: 28px; font-weight: 800; line-height: 1.2; margin-bottom: 12px; }
+  .slide-1 h2 .highlight { color: #f5c842; }
+  .slide-1 p { color: #aaa; font-size: 14px; line-height: 1.5; }
+  .slide-2 { background: linear-gradient(145deg, #0a0a1a, #101030); }
+  .slide-2 .stat { font-size: 56px; font-weight: 900; background: linear-gradient(135deg, #f5c842, #e1306c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .slide-2 h3 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+  .slide-2 p { color: #aaa; font-size: 13px; line-height: 1.6; }
+  .slide-2 .source { margin-top: 16px; font-size: 11px; color: #666; font-style: italic; }
+  .slide-3 { background: linear-gradient(145deg, #0a1a0a, #0a200a); }
+  .slide-3 h3 { font-size: 22px; font-weight: 700; margin-bottom: 20px; color: #8bdb68; }
+  .slide-3 .ingredient { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .slide-3 .ingredient .icon { font-size: 24px; }
+  .slide-3 .ingredient .name { font-weight: 700; font-size: 15px; }
+  .slide-3 .ingredient .desc { font-size: 12px; color: #aaa; margin-top: 2px; }
+  .slide-4 { background: linear-gradient(145deg, #1a0a1a, #200a15); text-align: center; }
+  .slide-4 .brand { font-size: 32px; font-weight: 900; background: linear-gradient(135deg, #feda75, #fa7e1e, #d62976); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .slide-4 .tagline { font-size: 14px; color: #ccc; margin-bottom: 24px; }
+  .slide-4 .cta { display: inline-block; padding: 12px 32px; border-radius: 24px; background: linear-gradient(135deg, #e1306c, #fd1d1d); font-weight: 700; font-size: 14px; }
+  .dots { display: flex; justify-content: center; gap: 6px; padding: 12px; }
+  .dots span { width: 6px; height: 6px; border-radius: 50%; background: #444; }
+  .dots span.active { background: #e1306c; }
+  .caption-area { padding: 16px; }
+  .caption { font-size: 13px; line-height: 1.6; white-space: pre-wrap; }
+  .caption .handle-inline { font-weight: 600; }
+  .hashtags { margin-top: 8px; color: #6e8bbd; font-size: 12px; }
+  .posting-notes { margin-top: 24px; background: #111; border: 1px solid #222; border-radius: 12px; padding: 16px; }
+  .posting-notes h4 { font-size: 13px; font-weight: 700; color: #e1306c; margin-bottom: 8px; }
+  .posting-notes ul { list-style: none; font-size: 12px; color: #888; }
+  .posting-notes li { padding: 4px 0; padding-left: 16px; position: relative; }
+  .posting-notes li::before { content: ""; position: absolute; left: 0; top: 10px; width: 6px; height: 6px; border-radius: 50%; background: #333; }
+  .scroll-hint { text-align: center; color: #555; font-size: 11px; padding: 8px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="meta-bar">
+    <span class="pillar">Skin Science</span>
+    <span class="format">Carousel - 4 slides</span>
+  </div>
+
+  <div class="phone-frame">
+    <div class="header">
+      <div class="avatar"><span>GL</span></div>
+      <span class="handle">glowlab.skincare</span>
+    </div>
+
+    <div class="carousel">
+      <div class="slides">
+        <!-- Slide 1: Hook -->
+        <div class="slide slide-1">
+          <div class="emoji">🧪</div>
+          <h2>What <span class="highlight">turmeric</span> actually does to your skin</h2>
+          <p>The science behind the tradition your nani swore by</p>
+        </div>
+        <!-- Slide 2: The Science -->
+        <div class="slide slide-2">
+          <div class="stat">40%</div>
+          <h3>reduction in hyperpigmentation</h3>
+          <p>Curcumin — the active compound in turmeric — is a clinically proven antioxidant. Peer-reviewed studies show it reduces dark spots by up to 40% in just 8 weeks.</p>
+          <div class="source">Source: Journal of Cosmetic Dermatology, 2019</div>
+        </div>
+        <!-- Slide 3: GlowLab Ingredients -->
+        <div class="slide slide-3">
+          <h3>Our turmeric is different</h3>
+          <div class="ingredient">
+            <span class="icon">🌿</span>
+            <div><div class="name">High-curcumin variety</div><div class="desc">95% purity from Karnataka farms</div></div>
+          </div>
+          <div class="ingredient">
+            <span class="icon">🔬</span>
+            <div><div class="name">Dermatologist tested</div><div class="desc">Validated in clinical-grade lab conditions</div></div>
+          </div>
+          <div class="ingredient">
+            <span class="icon">📍</span>
+            <div><div class="name">Farm traceable</div><div class="desc">Know exactly which farm your mask comes from</div></div>
+          </div>
+        </div>
+        <!-- Slide 4: CTA -->
+        <div class="slide slide-4">
+          <div class="brand">GlowLab</div>
+          <div class="tagline">Ayurveda meets science. Farm to face.</div>
+          <div class="cta">Shop Turmeric Mask</div>
+        </div>
+      </div>
+      <p class="scroll-hint">← scroll slides →</p>
+      <div class="dots">
+        <span class="active"></span><span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <div class="caption-area">
+      <div class="caption"><span class="handle-inline">glowlab.skincare</span> You know that post-haldi glow your nani always had? There's actual science behind it. 🧪
+
+Curcumin — the active compound in turmeric — is a clinically proven antioxidant that reduces hyperpigmentation by up to 40% in 8 weeks.
+
+Our Turmeric Brightening Mask uses high-curcumin turmeric from Karnataka, tested at 95% purity. Every batch is traceable to the farm it came from.
+
+Save this for your next skincare shopping! 💛</div>
+      <div class="hashtags">#GlowLab #TurmericSkincare #AyurvedaMeetsScience #organicskincareindia #cleanbeautyindia #skincareroutine #glowingskin #indianskincare</div>
+    </div>
+  </div>
+
+  <div class="posting-notes">
+    <h4>Posting Notes</h4>
+    <ul>
+      <li>Schedule: Monday (Skin Science pillar)</li>
+      <li>Best time: 8:30 AM IST</li>
+      <li>Format: Carousel (4 slides)</li>
+      <li>Goal: Saves + shares (educational content)</li>
+      <li>CTA: Save for later + link in bio</li>
+      <li>Visual: Use real product photography, not stock</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

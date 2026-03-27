@@ -72,8 +72,11 @@ export function DiscoveryStepUsp() {
         </div>
         <h2 className="text-2xl font-bold">What makes you unique?</h2>
         <p className="text-muted-foreground">
-          Your unique selling proposition helps us differentiate your content
-          from competitors.
+          {profile.accountType === "business"
+            ? "Your unique selling proposition helps us differentiate your content from competitors."
+            : profile.accountType === "creator"
+            ? "What sets you apart from other creators in your niche? This shapes your content angle."
+            : "What's your unique perspective? This helps us create content that feels authentically you."}
         </p>
       </div>
 
@@ -81,12 +84,22 @@ export function DiscoveryStepUsp() {
         <CardContent className="space-y-5 pt-2">
           <div className="space-y-1.5">
             <label className="text-sm font-medium">
-              Your Unique Selling Proposition
+              {profile.accountType === "business"
+                ? "Your Unique Selling Proposition"
+                : profile.accountType === "creator"
+                ? "Your Unique Angle"
+                : "Your Unique Perspective"}
             </label>
             <textarea
               value={profile.usp}
               onChange={(e) => updateProfile({ usp: e.target.value })}
-              placeholder="e.g., We're the only fitness brand that combines AI-powered meal plans with live coaching for busy professionals."
+              placeholder={
+                profile.accountType === "business"
+                  ? "e.g., We're the only fitness brand that combines AI-powered meal plans with live coaching for busy professionals."
+                  : profile.accountType === "creator"
+                  ? "e.g., I teach complex investing concepts using memes and pop culture references — making finance fun for Gen Z."
+                  : "e.g., I capture everyday moments in my city with a cinematic eye — turning mundane walks into visual stories."
+              }
               rows={3}
               className="w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none"
             />

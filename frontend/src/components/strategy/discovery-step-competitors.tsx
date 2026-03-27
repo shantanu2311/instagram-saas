@@ -36,10 +36,12 @@ export function DiscoveryStepCompetitors() {
         <div className="mx-auto h-12 w-12 rounded-xl ig-gradient flex items-center justify-center mb-4">
           <Search className="h-6 w-6 text-white" />
         </div>
-        <h2 className="text-2xl font-bold">Who are your competitors?</h2>
+        <h2 className="text-2xl font-bold">Who inspires you?</h2>
         <p className="text-muted-foreground">
-          We'll analyze their content strategy, posting patterns, and engagement
-          to find opportunities for you.
+          Add competitors or accounts you admire. We&apos;ll analyze their strategy to find opportunities for you.
+        </p>
+        <p className="text-[11px] text-muted-foreground/60">
+          Optional — you can skip this and add them later.
         </p>
       </div>
 
@@ -52,7 +54,7 @@ export function DiscoveryStepCompetitors() {
                 value={handle}
                 onChange={(e) => setHandle(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addCompetitor()}
-                placeholder="instagram_handle"
+                placeholder="e.g., nike, garyvee"
                 className="pl-8"
               />
             </div>

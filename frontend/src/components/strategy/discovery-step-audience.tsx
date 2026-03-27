@@ -75,11 +75,13 @@ export function DiscoveryStepAudience() {
               <Input
                 type="number"
                 value={profile.targetAgeMin}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const val = Math.max(13, Math.min(100, Number(e.target.value)));
                   updateProfile({
-                    targetAgeMin: Math.max(13, Number(e.target.value)),
-                  })
-                }
+                    targetAgeMin: val,
+                    ...(val > profile.targetAgeMax ? { targetAgeMax: val } : {}),
+                  });
+                }}
                 min={13}
                 max={100}
                 className="w-24"
@@ -88,11 +90,13 @@ export function DiscoveryStepAudience() {
               <Input
                 type="number"
                 value={profile.targetAgeMax}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const val = Math.max(13, Math.min(100, Number(e.target.value)));
                   updateProfile({
-                    targetAgeMax: Math.min(100, Number(e.target.value)),
-                  })
-                }
+                    targetAgeMax: val,
+                    ...(val < profile.targetAgeMin ? { targetAgeMin: val } : {}),
+                  });
+                }}
                 min={13}
                 max={100}
                 className="w-24"
@@ -135,8 +139,9 @@ export function DiscoveryStepAudience() {
           {/* Demographics / Interests */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Interests &amp; Demographics
+              Who are they?
             </label>
+            <p className="text-[11px] text-muted-foreground">Select or add tags that describe your ideal audience.</p>
             <div className="flex flex-wrap gap-2">
               {presetDemographics.map((tag) => (
                 <button
