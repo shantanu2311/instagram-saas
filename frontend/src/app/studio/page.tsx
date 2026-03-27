@@ -50,6 +50,7 @@ function StudioContent() {
   const [prompt, setPrompt] = useState("");
   const [selectedPillar, setSelectedPillar] = useState("facts");
   const [selectedTemplate, setSelectedTemplate] = useState("fact_card");
+  const [selectedStyle, setSelectedStyle] = useState("Fact Card");
   const [generating, setGenerating] = useState(false);
   const [posting, setPosting] = useState(false);
   const [postSuccess, setPostSuccess] = useState(false);
@@ -352,18 +353,26 @@ function StudioContent() {
                 <TabsContent value="style" className="mt-2">
                   <div className="flex flex-wrap gap-1.5">
                     {[
-                      "Fact Card",
-                      "Stat Highlight",
-                      "Quote",
-                      "Listicle",
-                      "Question Hook",
+                      { label: "Fact Card", style: "fact_card" },
+                      { label: "Stat Highlight", style: "stat_highlight" },
+                      { label: "Quote", style: "quote" },
+                      { label: "Listicle", style: "listicle" },
+                      { label: "Question Hook", style: "question_hook" },
                     ].map((s) => (
                       <Badge
-                        key={s}
+                        key={s.style}
                         variant="outline"
-                        className="cursor-pointer hover:bg-ig-pink/10 hover:border-ig-pink/30 text-[10px]"
+                        onClick={() => {
+                          setSelectedStyle(s.label);
+                          setSelectedTemplate(s.style);
+                        }}
+                        className={`cursor-pointer text-[10px] ${
+                          selectedStyle === s.label
+                            ? "bg-ig-pink/10 border-ig-pink/30 text-ig-pink"
+                            : "hover:bg-ig-pink/10 hover:border-ig-pink/30"
+                        }`}
                       >
-                        {s}
+                        {s.label}
                       </Badge>
                     ))}
                   </div>

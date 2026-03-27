@@ -30,11 +30,22 @@ export default function CalendarPage() {
   const [view, setView] = useState<CalendarView>("month");
   const { calendar } = useStrategyStore();
   const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const year = viewYear;
+  const month = viewMonth;
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const monthName = today.toLocaleString("default", { month: "long" });
+  const monthName = new Date(year, month).toLocaleString("default", { month: "long" });
+
+  const goToPrevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
+    else setViewMonth(viewMonth - 1);
+  };
+  const goToNextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
+    else setViewMonth(viewMonth + 1);
+  };
 
   // Build slot lookup from strategy calendar
   const slotMap = useMemo(() => {
@@ -142,10 +153,10 @@ export default function CalendarPage() {
                 {monthName} {year}
               </CardTitle>
               <div className="flex gap-1">
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={goToPrevMonth}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={goToNextMonth}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

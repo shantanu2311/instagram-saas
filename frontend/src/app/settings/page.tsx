@@ -22,7 +22,7 @@ export default function SettingsPage() {
 
 function SettingsContent() {
   const searchParams = useSearchParams();
-  const igConnected = searchParams.get("ig_connected") === "true";
+  const [igConnected, setIgConnected] = useState(searchParams.get("ig_connected") === "true");
   const igError = searchParams.get("ig_error");
   const [saved, setSaved] = useState(false);
 
@@ -106,7 +106,14 @@ function SettingsContent() {
                     Connected
                   </Badge>
                 </div>
-                <Button size="sm" variant="outline">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setIgConnected(false);
+                    window.history.replaceState({}, "", "/settings");
+                  }}
+                >
                   Disconnect
                 </Button>
               </>

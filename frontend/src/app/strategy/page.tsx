@@ -232,7 +232,16 @@ export default function StrategyPage() {
             Edit Strategy
           </Button>
         </Link>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={async () => {
+            try {
+              await fetch("/api/strategy/trends", { method: "POST" });
+            } catch {}
+          }}
+        >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh Trends
         </Button>
