@@ -22,11 +22,17 @@ export async function POST(request: Request) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json({
-      status: "started",
-      mock: true,
-      researchId: "mock-research-1",
-      message: "Research started (mock)",
-    });
+    if (process.env.NODE_ENV === "development") {
+      return NextResponse.json({
+        status: "started",
+        mock: true,
+        researchId: "mock-research-1",
+        message: "Research started (mock)",
+      });
+    }
+    return NextResponse.json(
+      { error: "Research service unavailable. Please try again later." },
+      { status: 503 }
+    );
   }
 }

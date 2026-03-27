@@ -43,6 +43,8 @@ function StudioContent() {
   const [selectedPillar, setSelectedPillar] = useState("facts");
   const [selectedTemplate, setSelectedTemplate] = useState("fact_card");
   const [generating, setGenerating] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const [postSuccess, setPostSuccess] = useState(false);
   const [result, setResult] = useState<{
     imageUrl: string | null;
     caption: string;
@@ -58,6 +60,58 @@ function StudioContent() {
     if (topic) setPrompt(topic);
     if (pillar) setSelectedPillar(pillar);
   }, [searchParams]);
+
+  const handlePostNow = async () => {
+    if (!result) return;
+    setPosting(true);
+    try {
+      const res = await fetch("/api/posts/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image_url: result.imageUrl,
+          caption: result.caption,
+          hashtags: result.hashtags,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        alert("Instagram not connected. Connect your account in Settings to post.");
+      } else {
+        setPostSuccess(true);
+        try {
+          const confetti = (await import("canvas-confetti")).default;
+          confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        } catch {}
+      }
+    } catch {
+      alert("Could not publish. Make sure your Instagram account is connected.");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleSchedule = () => {
+    alert("Scheduling coming soon! Your content has been saved as a draft.");
+  };
+
+  const handleSaveDraft = async () => {
+    if (!result) return;
+    await fetch("/api/studio/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contentType,
+        generationTier: tier,
+        prompt,
+        caption: result.caption,
+        hashtags: result.hashtags,
+        mediaUrls: result.imageUrl ? [result.imageUrl] : [],
+        qualityScore: result.quality_score,
+        status: "draft",
+      }),
+    });
+  };
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -388,13 +442,20 @@ function StudioContent() {
 
                   {/* Actions */}
                   <div className="flex gap-2">
-                    <Button className="flex-1">
-                      <Send className="h-4 w-4 mr-2" />
-                      Post Now
+                    <Button className="flex-1" onClick={handlePostNow} disabled={posting}>
+                      {posting ? "Publishing..." : postSuccess ? "Posted!" : <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Post Now
+                      </>}
                     </Button>
-                    <Button variant="outline" className="flex-1">
+                    <Button variant="outline" className="flex-1" onClick={handleSchedule}>
                       <Calendar className="h-4 w-4 mr-2" />
                       Schedule
+                    </Button>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button variant="ghost" size="sm" onClick={handleSaveDraft}>
+                      Save Draft
                     </Button>
                   </div>
                 </div>

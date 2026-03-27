@@ -41,31 +41,36 @@ export async function POST(request: Request) {
 
     return NextResponse.json(data);
   } catch {
-    // Backend not running — return mock data for development
-    return NextResponse.json({
-      status: "generated",
-      image_url: null,
-      caption:
-        "The silent productivity killer nobody talks about...\n\nSleep deprivation costs the US economy $411 billion annually — that's 2.28% of GDP.\n\nThe research is clear: prioritizing rest isn't lazy, it's strategic.",
-      hashtags: [
-        "#productivity",
-        "#sleep",
-        "#health",
-        "#business",
-        "#wellness",
-      ],
-      quality_score: 87,
-      quality_criteria: {
-        dimensions: 10,
-        file_size: 10,
-        text_readability: 9,
-        brand_consistency: 8,
-        caption_quality: 8,
-        hashtags: 8,
-      },
-      content_type: "image",
-      generation_tier: "standard",
-      mock: true,
-    });
+    if (process.env.NODE_ENV === "development") {
+      return NextResponse.json({
+        status: "generated",
+        image_url: null,
+        caption:
+          "The silent productivity killer nobody talks about...\n\nSleep deprivation costs the US economy $411 billion annually — that's 2.28% of GDP.\n\nThe research is clear: prioritizing rest isn't lazy, it's strategic.",
+        hashtags: [
+          "#productivity",
+          "#sleep",
+          "#health",
+          "#business",
+          "#wellness",
+        ],
+        quality_score: 87,
+        quality_criteria: {
+          dimensions: 10,
+          file_size: 10,
+          text_readability: 9,
+          brand_consistency: 8,
+          caption_quality: 8,
+          hashtags: 8,
+        },
+        content_type: "image",
+        generation_tier: "standard",
+        mock: true,
+      });
+    }
+    return NextResponse.json(
+      { error: "Content generation service unavailable. Please try again later." },
+      { status: 503 }
+    );
   }
 }

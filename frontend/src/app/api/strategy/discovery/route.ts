@@ -22,12 +22,18 @@ export async function POST(request: Request) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json({
-      status: "saved",
-      mock: true,
-      profileId: "mock-profile-1",
-      message: "Discovery profile saved (mock)",
-    });
+    if (process.env.NODE_ENV === "development") {
+      return NextResponse.json({
+        status: "saved",
+        mock: true,
+        profileId: "mock-profile-1",
+        message: "Discovery profile saved (mock)",
+      });
+    }
+    return NextResponse.json(
+      { error: "Strategy service unavailable. Please try again later." },
+      { status: 503 }
+    );
   }
 }
 
@@ -38,9 +44,15 @@ export async function GET() {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json({
-      mock: true,
-      profiles: [],
-    });
+    if (process.env.NODE_ENV === "development") {
+      return NextResponse.json({
+        mock: true,
+        profiles: [],
+      });
+    }
+    return NextResponse.json(
+      { error: "Strategy service unavailable. Please try again later." },
+      { status: 503 }
+    );
   }
 }

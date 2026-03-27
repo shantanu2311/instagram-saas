@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export interface BrandConfig {
   // Step 1: Niche
@@ -60,13 +61,37 @@ const defaultBrand: BrandConfig = {
   brandHashtag: "",
 };
 
-export const useOnboardingStore = create<OnboardingState>((set) => ({
-  step: 0,
-  brand: { ...defaultBrand },
-  setStep: (step) => set({ step }),
-  nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 3) })),
-  prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 0) })),
-  updateBrand: (updates) =>
-    set((s) => ({ brand: { ...s.brand, ...updates } })),
-  reset: () => set({ step: 0, brand: { ...defaultBrand } }),
-}));
+export const useOnboardingStore = create<OnboardingState>()(
+  persist(
+    (set) => ({
+      step: 0,
+      brand: { ...defaultBrand },
+      setStep: (step) => set({ step }),
+      nextStep: () => set((s) => ({ step: Math.min(s.step + 1, 3) })),
+      prevStep: () => set((s) => ({ step: Math.max(s.step - 1, 0) })),
+      updateBrand: (updates) =>
+        set((s) => ({ brand: { ...s.brand, ...updates } })),
+      reset: () => set({ step: 0, brand: { ...defaultBrand } }),
+    }),
+    {
+      name: "igcreator-onboarding",
+      storage: {
+        getItem: (name) => {
+          if (typeof window === "undefined") return null;
+          const val = sessionStorage.getItem(name);
+          return val ? JSON.parse(val) : null;
+        },
+        setItem: (name, value) => {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(name, JSON.stringify(value));
+          }
+        },
+        removeItem: (name) => {
+          if (typeof window !== "undefined") {
+            sessionStorage.removeItem(name);
+          }
+        },
+      },
+    }
+  )
+);

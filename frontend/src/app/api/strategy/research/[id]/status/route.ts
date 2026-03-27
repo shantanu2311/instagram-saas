@@ -14,12 +14,18 @@ export async function GET(
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json({
-      mock: true,
-      researchId: id,
-      status: "complete",
-      progress: 100,
-      results: null,
-    });
+    if (process.env.NODE_ENV === "development") {
+      return NextResponse.json({
+        mock: true,
+        researchId: id,
+        status: "complete",
+        progress: 100,
+        results: null,
+      });
+    }
+    return NextResponse.json(
+      { error: "Research service unavailable. Please try again later." },
+      { status: 503 }
+    );
   }
 }

@@ -137,7 +137,7 @@ export function DiscoveryStepUsp() {
         </Button>
         <Button
           onClick={handleStartResearch}
-          disabled={submitting}
+          disabled={submitting || !profile.usp.trim()}
           size="lg"
           className="px-8 gap-2"
         >

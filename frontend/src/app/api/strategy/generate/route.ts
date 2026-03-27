@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
+    if (process.env.NODE_ENV === "development") {
     return NextResponse.json({
       id: "mock-strategy-1",
       mock: true,
@@ -128,5 +129,10 @@ export async function POST(request: Request) {
         day90: { followers: "+5,000", engagement: "4%", posts: 60 },
       },
     });
+    }
+    return NextResponse.json(
+      { error: "Strategy generation service unavailable. Please try again later." },
+      { status: 503 }
+    );
   }
 }

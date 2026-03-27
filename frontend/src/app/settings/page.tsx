@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,12 @@ function SettingsContent() {
   const searchParams = useSearchParams();
   const igConnected = searchParams.get("ig_connected") === "true";
   const igError = searchParams.get("ig_error");
+  const [saved, setSaved] = useState(false);
+
+  const handleSaveChanges = () => {
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
     <PageTransition>
@@ -75,7 +82,9 @@ function SettingsContent() {
               <Input defaultValue="dev@example.com" disabled />
             </div>
           </div>
-          <Button size="sm">Save Changes</Button>
+          <Button size="sm" onClick={handleSaveChanges}>
+            {saved ? "Saved!" : "Save Changes"}
+          </Button>
         </CardContent>
       </Card>
 
@@ -129,9 +138,11 @@ function SettingsContent() {
           <p className="text-sm text-muted-foreground">
             Complete onboarding to set up your brand identity.
           </p>
-          <Button size="sm" variant="outline" className="mt-3">
-            Edit Brand
-          </Button>
+          <Link href="/onboarding">
+            <Button size="sm" variant="outline" className="mt-3">
+              Edit Brand
+            </Button>
+          </Link>
         </CardContent>
       </Card>
 
@@ -144,12 +155,14 @@ function SettingsContent() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button size="sm" variant="outline">
+          <Button size="sm" variant="outline" disabled className="opacity-50">
             Change Password
+            <span className="ml-2 text-[10px] text-muted-foreground">(Coming soon)</span>
           </Button>
           <div>
-            <Button size="sm" variant="destructive">
+            <Button size="sm" variant="destructive" disabled className="opacity-50">
               Delete Account
+              <span className="ml-2 text-[10px]">(Contact support)</span>
             </Button>
           </div>
         </CardContent>

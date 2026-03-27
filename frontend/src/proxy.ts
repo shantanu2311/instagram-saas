@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Routes that require authentication
-const protectedPrefixes = ["/dashboard", "/studio", "/settings", "/onboarding"];
+const protectedPrefixes = ["/dashboard", "/studio", "/settings", "/onboarding", "/strategy"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

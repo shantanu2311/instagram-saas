@@ -25,7 +25,13 @@ export async function POST(request: Request) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    // Mock calendar generation
+    if (process.env.NODE_ENV !== "development") {
+      return NextResponse.json(
+        { error: "Calendar service unavailable. Please try again later." },
+        { status: 503 }
+      );
+    }
+    // Mock calendar generation (development only)
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
@@ -79,9 +85,15 @@ export async function GET() {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json({
-      mock: true,
-      calendars: [],
-    });
+    if (process.env.NODE_ENV === "development") {
+      return NextResponse.json({
+        mock: true,
+        calendars: [],
+      });
+    }
+    return NextResponse.json(
+      { error: "Calendar service unavailable. Please try again later." },
+      { status: 503 }
+    );
   }
 }

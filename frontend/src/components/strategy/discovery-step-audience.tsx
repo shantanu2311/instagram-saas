@@ -198,7 +198,7 @@ export function DiscoveryStepAudience() {
         <Button variant="outline" onClick={prevDiscoveryStep} size="lg">
           Back
         </Button>
-        <Button onClick={nextDiscoveryStep} size="lg" className="px-12">
+        <Button onClick={nextDiscoveryStep} size="lg" className="px-12" disabled={!profile.targetLocation.trim()}>
           Continue
         </Button>
       </div>
