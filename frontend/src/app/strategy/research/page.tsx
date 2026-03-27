@@ -126,6 +126,7 @@ export default function ResearchPage() {
   const [activeStep, setActiveStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeStepRef = useRef(0);
 
@@ -174,6 +175,7 @@ export default function ResearchPage() {
 
   const handleGenerateStrategy = async () => {
     setGenerating(true);
+    setGenerateError(null);
     try {
       const res = await fetch("/api/strategy/generate", {
         method: "POST",
@@ -184,124 +186,15 @@ export default function ResearchPage() {
         }),
       });
       const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || `Strategy generation failed (${res.status})`);
+      }
       setStrategy(data);
-    } catch {
-      // Use mock strategy
-      setStrategy({
-        id: "mock-strategy-1",
-        status: "draft",
-        brandPositioning: {
-          summary:
-            "A bold, innovative brand empowering professionals with actionable insights.",
-          keyMessages: [
-            "Empowering your growth",
-            "Data-driven strategies",
-            "Authentic connections",
-          ],
-        },
-        contentPillars: [
-          {
-            name: "Education",
-            percentage: 40,
-            rationale: "Builds authority and drives saves",
-            examples: ["Tips carousel", "How-to reel", "Myth-busting post"],
-          },
-          {
-            name: "Entertainment",
-            percentage: 30,
-            rationale: "Drives shares and new followers",
-            examples: ["Trending audio reel", "Meme post", "Relatable content"],
-          },
-          {
-            name: "Promotion",
-            percentage: 20,
-            rationale: "Converts followers to customers",
-            examples: [
-              "Product showcase",
-              "Customer testimonial",
-              "Limited offer",
-            ],
-          },
-          {
-            name: "Community",
-            percentage: 10,
-            rationale: "Builds loyalty and engagement",
-            examples: ["Q&A stories", "Poll", "User spotlight"],
-          },
-        ],
-        postingCadence: {
-          postsPerWeek: 5,
-          bestTimes: ["7:30 AM", "12:00 PM", "6:30 PM"],
-          schedule: {
-            Mon: "Education",
-            Tue: "Entertainment",
-            Wed: "Education",
-            Thu: "Promotion",
-            Fri: "Entertainment",
-          },
-        },
-        toneAndVoice: {
-          doList: [
-            "Be conversational and relatable",
-            "Use data to back up claims",
-            "Ask questions to drive engagement",
-          ],
-          dontList: [
-            "Sound robotic or corporate",
-            "Use jargon without explanation",
-            "Be preachy or condescending",
-          ],
-          sampleCaptions: [
-            "Stop scrolling. This one tip changed everything for me...",
-            "Unpopular opinion: You don't need 10K followers to make money on IG.",
-          ],
-        },
-        hashtagStrategy: {
-          branded: ["#YourBrand", "#YourBrandTips"],
-          niche: [
-            "#contentstrategy",
-            "#socialmediamarketing",
-            "#instagramgrowth",
-          ],
-          trending: ["#reelstrending", "#viralcontent", "#growthmindset"],
-        },
-        contentFormats: { reels: 50, carousels: 30, images: 20 },
-        growthTactics: [
-          {
-            name: "Collaboration Reels",
-            impact: "High",
-            description: "Partner with complementary accounts for shared reach",
-          },
-          {
-            name: "Comment Strategy",
-            impact: "Medium",
-            description:
-              "Leave valuable comments on larger accounts in your niche",
-          },
-          {
-            name: "Story Engagement",
-            impact: "Medium",
-            description: "Use polls, quizzes, and questions in daily stories",
-          },
-        ],
-        milestones: {
-          day30: {
-            followers: "+500",
-            engagement: "2%",
-            posts: 20,
-          },
-          day60: {
-            followers: "+2,000",
-            engagement: "3%",
-            posts: 40,
-          },
-          day90: {
-            followers: "+5,000",
-            engagement: "4%",
-            posts: 60,
-          },
-        },
-      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Strategy generation failed";
+      setGenerateError(message);
+      setGenerating(false);
+      return;
     }
     setGenerating(false);
     router.push("/strategy/review");
@@ -579,7 +472,7 @@ export default function ResearchPage() {
       </div>
 
       {/* CTA */}
-      <div className="flex justify-center pt-4 pb-8">
+      <div className="flex flex-col items-center gap-3 pt-4 pb-8">
         <Button
           onClick={handleGenerateStrategy}
           disabled={generating}
@@ -599,6 +492,11 @@ export default function ResearchPage() {
             </>
           )}
         </Button>
+        {generateError && (
+          <p className="text-sm text-destructive text-center max-w-md">
+            {generateError}. Please check your AI configuration and try again.
+          </p>
+        )}
       </div>
     </div>
   );
