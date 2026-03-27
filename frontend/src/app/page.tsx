@@ -8,7 +8,6 @@ import {
   Lightbulb,
   Wand2,
   Send,
-  Star,
   ArrowRight,
   Globe,
   AtSign,
@@ -65,30 +64,6 @@ const pricingTiers = [
       "Custom quality gate",
       "Team access (5)",
     ],
-  },
-];
-
-const testimonials = [
-  {
-    name: "Sarah Chen",
-    handle: "@sarahcreates",
-    quote:
-      "IGCreator cut my content creation time by 80%. I went from 2 hours per post to approving AI-generated content in minutes.",
-    rating: 5,
-  },
-  {
-    name: "Marcus Johnson",
-    handle: "@marcusfit",
-    quote:
-      "The strategy engine understood my fitness niche better than I expected. My engagement rate doubled in the first month.",
-    rating: 5,
-  },
-  {
-    name: "Priya Patel",
-    handle: "@priyastyle",
-    quote:
-      "Finally a tool that actually gets Instagram. The quality gate catches mistakes before they go live. Game changer.",
-    rating: 5,
   },
 ];
 
@@ -517,42 +492,26 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Early Access */}
       <section className="py-24 px-6 bg-muted/20">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-4">
-            Loved by creators
-          </h2>
-          <p className="text-center text-muted-foreground mb-16">
-            See what Instagram creators are saying
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((t) => (
-              <div
-                key={t.handle}
-                className="rounded-xl border border-border/40 bg-card p-6 space-y-4"
-              >
-                <div className="flex gap-0.5">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-4 w-4 fill-ig-orange text-ig-orange"
-                    />
-                  ))}
-                </div>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  &ldquo;{t.quote}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-ig-pink to-ig-orange" />
-                  <div>
-                    <p className="text-sm font-medium">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.handle}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="max-w-3xl mx-auto text-center space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-ig-pink/30 text-sm text-ig-pink bg-ig-pink/5">
+            <Sparkles className="h-3.5 w-3.5" />
+            Early Access
           </div>
+          <h2 className="text-3xl font-bold">
+            Be among the first creators to try IGCreator
+          </h2>
+          <p className="text-muted-foreground max-w-lg mx-auto">
+            We&apos;re onboarding creators who want to grow on Instagram with
+            AI-powered content strategy and generation. Join the waitlist.
+          </p>
+          <Link href="/auth/signup">
+            <Button size="lg" className="h-12 px-8">
+              Join Early Access
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          </Link>
         </div>
       </section>
 
@@ -699,7 +658,7 @@ export default function LandingPage() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link
-                  href="#"
+                  href="/privacy"
                   className="hover:text-foreground transition-colors"
                 >
                   Privacy Policy
@@ -707,7 +666,7 @@ export default function LandingPage() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/terms"
                   className="hover:text-foreground transition-colors"
                 >
                   Terms of Service
@@ -715,7 +674,7 @@ export default function LandingPage() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="/privacy"
                   className="hover:text-foreground transition-colors"
                 >
                   Cookie Policy

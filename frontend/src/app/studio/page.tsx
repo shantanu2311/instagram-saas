@@ -21,6 +21,7 @@ import { TemplateGallery } from "@/components/studio/template-gallery";
 import { GenerationProgress } from "@/components/studio/generation-progress";
 import { QualityRing } from "@/components/studio/quality-ring";
 import { PageTransition } from "@/components/page-transition";
+import { DraftHistory } from "@/components/studio/draft-history";
 
 type ContentType = "image" | "carousel" | "reel";
 type GenerationTier = "standard" | "ai-enhanced";
@@ -43,6 +44,7 @@ function StudioContent() {
   const [selectedTemplate, setSelectedTemplate] = useState("fact_card");
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<{
+    imageUrl: string | null;
     caption: string;
     hashtags: string[];
     quality_score: number;
@@ -64,25 +66,22 @@ function StudioContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          endpoint: contentType === "reel" ? "reel" : "image",
-          template: {
-            id: `gen_${Date.now()}`,
-            category: selectedPillar.toUpperCase(),
-            headline: prompt,
-            body: "",
-            image_style: selectedTemplate,
-          },
+          topic: prompt,
+          pillar: selectedPillar,
+          content_type: contentType,
+          image_style: selectedTemplate || "fact_card",
+          generation_tier: tier,
           brand: {
-            primary_color: [139, 92, 246],
-            secondary_color: [236, 72, 153],
-            accent_color: [245, 158, 11],
+            primary_color: [221, 42, 123],
+            secondary_color: [245, 133, 41],
+            accent_color: [129, 52, 175],
             brand_name: "My Brand",
           },
-          generation_tier: tier,
         }),
       });
       const data = await res.json();
       setResult({
+        imageUrl: data.image_url || null,
         caption: data.caption || "Generated caption will appear here.",
         hashtags: data.hashtags || ["#content", "#instagram", "#growth"],
         quality_score: data.quality_score || 87,
@@ -90,6 +89,7 @@ function StudioContent() {
       });
     } catch {
       setResult({
+        imageUrl: null,
         caption:
           "The silent productivity killer nobody talks about...\n\nSleep deprivation costs the US economy $411 billion annually.",
         hashtags: [
@@ -340,15 +340,25 @@ function StudioContent() {
                           </span>
                         </div>
                         {/* Post image */}
-                        <div className="flex-1 bg-gradient-to-br from-rose-950 to-pink-900 flex items-center justify-center relative overflow-hidden p-4">
-                          <div className="text-center space-y-2">
-                            <p className="text-[9px] uppercase tracking-[0.2em] text-pink-300">
-                              {selectedPillar.replace("-", " ")}
-                            </p>
-                            <p className="text-sm font-bold text-white leading-tight">
-                              {prompt || "Your generated content"}
-                            </p>
-                          </div>
+                        <div className="flex-1 relative overflow-hidden">
+                          {result?.imageUrl ? (
+                            <img
+                              src={result.imageUrl}
+                              alt="Generated content"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-rose-950 to-pink-900 flex items-center justify-center p-4">
+                              <div className="text-center space-y-2">
+                                <p className="text-[9px] uppercase tracking-[0.2em] text-pink-300">
+                                  {selectedPillar.replace("-", " ")}
+                                </p>
+                                <p className="text-sm font-bold text-white leading-tight">
+                                  {prompt || "Your generated content"}
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         {/* Mock engagement bar */}
                         <div className="px-3 py-2 space-y-1">
@@ -406,6 +416,14 @@ function StudioContent() {
           </Card>
         </div>
       </div>
+
+      {/* Draft history */}
+      <DraftHistory
+        onLoad={(draft) => {
+          setPrompt(draft.caption);
+          setSelectedPillar(draft.pillar);
+        }}
+      />
     </div>
     </PageTransition>
   );

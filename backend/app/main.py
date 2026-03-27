@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import analytics, billing, generate, health, posting, strategy
+from app.api import analytics, billing, generate, health, media, posting, strategy
 from app.config import settings
 
 
@@ -30,6 +30,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
+app.include_router(media.router)
 app.include_router(generate.router)
 app.include_router(posting.router)
 app.include_router(analytics.router)

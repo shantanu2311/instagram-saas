@@ -1,4 +1,6 @@
+import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -8,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.models.content import GeneratedContent
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/posts", tags=["posting"])
 
 
@@ -16,7 +20,13 @@ router = APIRouter(prefix="/posts", tags=["posting"])
 
 class PublishRequest(BaseModel):
     content_id: str
-    ig_account_id: str
+    ig_account_id: str | None = None
+    image_url: str | None = None
+    image_path: str | None = None
+    caption: str | None = None
+    hashtags: list[str] | None = None
+    ig_access_token: str | None = None
+    ig_user_id: str | None = None
 
 
 class ScheduleRequest(BaseModel):
@@ -28,6 +38,7 @@ class ScheduleRequest(BaseModel):
 class PostStatusResponse(BaseModel):
     status: str
     content_id: str
+    ig_media_id: str | None = None
     scheduled_for: str | None = None
     message: str | None = None
 
@@ -50,7 +61,11 @@ class QueueResponse(BaseModel):
 
 @router.post("/publish", response_model=PostStatusResponse)
 async def publish_now(req: PublishRequest, db: AsyncSession = Depends(get_db)):
-    """Immediately enqueue a post for publishing via Celery."""
+    """Publish a post to Instagram immediately.
+
+    If ig_access_token and ig_user_id are provided, publishes directly via the
+    Instagram Graph API. Otherwise, enqueues via Celery for background processing.
+    """
     result = await db.execute(
         select(GeneratedContent).where(GeneratedContent.id == req.content_id)
     )
@@ -64,7 +79,65 @@ async def publish_now(req: PublishRequest, db: AsyncSession = Depends(get_db)):
             detail=f"Content must be in draft or approved status, got: {content.status}",
         )
 
-    # Update status and enqueue
+    # Direct publish path: caller provides IG credentials
+    if req.ig_access_token and req.ig_user_id:
+        from app.instagram.publisher import InstagramCredentials, InstagramPublisher
+        from app.instagram.uploader import upload_media
+
+        # Resolve the image URL
+        image_url = req.image_url
+        if not image_url and req.image_path:
+            # Upload local file to get a public URL
+            if Path(req.image_path).exists():
+                image_url = await upload_media(req.image_path)
+            else:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Image file not found: {req.image_path}",
+                )
+
+        if not image_url:
+            # Fall back to content's stored image_url if available
+            image_url = getattr(content, "image_url", None)
+        if not image_url:
+            raise HTTPException(
+                status_code=400,
+                detail="No image_url or image_path provided",
+            )
+
+        # Build caption
+        caption_text = req.caption or content.caption or ""
+        if req.hashtags:
+            caption_text = InstagramPublisher.format_caption(
+                caption_text, req.hashtags
+            )
+
+        # Publish
+        try:
+            creds = InstagramCredentials(
+                access_token=req.ig_access_token,
+                ig_user_id=req.ig_user_id,
+            )
+            publisher = InstagramPublisher(creds)
+            ig_media_id = await publisher.publish_single_image(image_url, caption_text)
+
+            content.status = "published"
+            await db.commit()
+
+            return PostStatusResponse(
+                status="published",
+                content_id=req.content_id,
+                ig_media_id=ig_media_id,
+                message="Post published to Instagram",
+            )
+        except Exception as e:
+            logger.error("Instagram publish failed: %s", e)
+            raise HTTPException(
+                status_code=502,
+                detail=f"Instagram publish failed: {e}",
+            )
+
+    # Fallback: enqueue via Celery
     content.status = "queued"
     await db.commit()
 

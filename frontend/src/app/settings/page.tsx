@@ -1,13 +1,29 @@
 "use client";
 
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Globe, Palette, User, Shield } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Globe, Palette, User, Shield, CheckCircle2, AlertCircle } from "lucide-react";
 import { PageTransition } from "@/components/page-transition";
 
 export default function SettingsPage() {
+  return (
+    <Suspense>
+      <SettingsContent />
+    </Suspense>
+  );
+}
+
+function SettingsContent() {
+  const searchParams = useSearchParams();
+  const igConnected = searchParams.get("ig_connected") === "true";
+  const igError = searchParams.get("ig_error");
+
   return (
     <PageTransition>
     <div className="p-6 space-y-6 max-w-3xl">
@@ -17,6 +33,28 @@ export default function SettingsPage() {
           Manage your account and brand settings.
         </p>
       </div>
+
+      {/* Instagram connection status banners */}
+      {igConnected && (
+        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          <p className="text-sm text-emerald-600 dark:text-emerald-400">
+            Instagram account connected successfully!
+          </p>
+        </div>
+      )}
+      {igError && (
+        <div className="flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {igError === "denied"
+              ? "Instagram connection was denied. Please try again."
+              : igError === "token_failed"
+              ? "Failed to get Instagram access token. Please try again."
+              : "An error occurred connecting Instagram. Please try again."}
+          </p>
+        </div>
+      )}
 
       {/* Account */}
       <Card className="border-border/40">
@@ -51,12 +89,30 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              No Instagram account connected.
-            </p>
-            <Button size="sm" variant="outline">
-              Connect Instagram
-            </Button>
+            {igConnected ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-foreground">Instagram connected</p>
+                  <Badge variant="outline" className="text-[10px] text-emerald-500 border-emerald-500/30">
+                    Connected
+                  </Badge>
+                </div>
+                <Button size="sm" variant="outline">
+                  Disconnect
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  No Instagram account connected.
+                </p>
+                <Link href="/api/instagram/connect">
+                  <Button size="sm" variant="outline">
+                    Connect Instagram
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
