@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── NextAuth Models ───────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  igAccounts   InstagramAccount[]
+  brands       Brand[]
+  subscription Subscription?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Instagram Models ──────────────────────────────────────────
+
+model InstagramAccount {
+  id              String    @id @default(cuid())
+  userId          String
+  igUserId        String    @unique
+  username        String
+  accessToken     String
+  tokenExpiresAt  DateTime?
+  profilePicUrl   String?
+  followersCount  Int       @default(0)
+  mediaCount      Int       @default(0)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand     Brand?
+  posts     GeneratedContent[]
+  snapshots AccountSnapshot[]
+
+  @@index([userId])
+}
+
+// ─── Subscription ──────────────────────────────────────────────
+
+model Subscription {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  stripeCustomerId   String?   @unique
+  stripeSubId        String?   @unique
+  tier               String    @default("free")
+  status             String    @default("active")
+  currentPeriodEnd   DateTime?
+  postsThisWeek      Int       @default(0)
+  postsResetAt       DateTime  @default(now())
+  aiCreditsRemaining Int       @default(0)
+  aiCreditsResetAt   DateTime?
+  maxIgAccounts      Int       @default(1)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Brand & Content ───────────────────────────────────────────
+
+model Brand {
+  id               String  @id @default(cuid())
+  userId           String
+  igAccountId      String? @unique
+  name             String
+  niche            String
+  primaryColor     String  @default("#8b5cf6")
+  secondaryColor   String  @default("#ec4899")
+  accentColor      String  @default("#f59e0b")
+  logoUrl          String?
+  fontHeadline     String  @default("Inter")
+  fontBody         String  @default("Inter")
+  toneFormality    Int     @default(50)
+  toneHumor        Int     @default(50)
+  voiceDescription String? @db.Text
+  sampleCaption    String? @db.Text
+  contentPillars   Json    @default("[]")
+  postingDays      Json    @default("{}")
+  postsPerWeek     Int     @default(5)
+  hashtagSets      Json?
+  brandHashtag     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  igAccount InstagramAccount? @relation(fields: [igAccountId], references: [id], onDelete: SetNull)
+  templates Template[]
+  posts     GeneratedContent[]
+
+  @@index([userId])
+}
+
+model Template {
+  id           String   @id @default(cuid())
+  brandId      String
+  name         String
+  contentType  String
+  pillar       String
+  layoutStyle  String
+  templateData Json
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
+}
+
+model GeneratedContent {
+  id              String    @id @default(cuid())
+  brandId         String
+  igAccountId     String?
+  contentType     String
+  generationTier  String    @default("standard")
+  templateId      String?
+  prompt          String?   @db.Text
+  caption         String?   @db.Text
+  hashtags        Json?
+  mediaUrls       Json
+  thumbnailUrl    String?
+  qualityScore    Int?
+  qualityCriteria Json?
+  status          String    @default("draft")
+  scheduledFor    DateTime?
+  postedAt        DateTime?
+  igMediaId       String?
+  aiCreditsUsed   Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  brand     Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  igAccount InstagramAccount? @relation(fields: [igAccountId], references: [id], onDelete: SetNull)
+  analytics PostAnalytics?
+
+  @@index([brandId])
+  @@index([igAccountId])
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+// ─── Analytics ─────────────────────────────────────────────────
+
+model PostAnalytics {
+  id          String   @id @default(cuid())
+  contentId   String   @unique
+  igMediaId   String?
+  reach       Int      @default(0)
+  impressions Int      @default(0)
+  likes       Int      @default(0)
+  comments    Int      @default(0)
+  saves       Int      @default(0)
+  shares      Int      @default(0)
+  engagement  Float    @default(0)
+  fetchedAt   DateTime @default(now())
+
+  content GeneratedContent @relation(fields: [contentId], references: [id], onDelete: Cascade)
+}
+
+model AccountSnapshot {
+  id               String   @id @default(cuid())
+  igAccountId      String
+  followersCount   Int
+  mediaCount       Int
+  reachTotal       Int?
+  impressionsTotal Int?
+  snapshotDate     DateTime @default(now())
+
+  igAccount InstagramAccount @relation(fields: [igAccountId], references: [id], onDelete: Cascade)
+
+  @@index([igAccountId])
+  @@index([snapshotDate])
+}

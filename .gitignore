@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build
+frontend/.next/
+frontend/out/
+backend/dist/
+
+# Database
+*.db
+*.sqlite
+
+# Generated media
+output/
+uploads/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+frontend/prisma/*.db
+frontend/prisma/migrations/
+
+# Celery
+celerybeat-schedule
+
+# Logs
+*.log
