@@ -12,6 +12,7 @@ import {
   CreditCard,
   Globe,
   Lightbulb,
+  Plus,
 } from "lucide-react";
 
 const navItems = [
@@ -39,8 +40,18 @@ export function Sidebar() {
         </Link>
       </div>
 
+      {/* Create Post button */}
+      <div className="px-3 pt-4 pb-2">
+        <Link href="/studio">
+          <button className="w-full flex items-center justify-center gap-2 rounded-lg ig-gradient px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90">
+            <Plus className="h-4 w-4" />
+            Create Post
+          </button>
+        </Link>
+      </div>
+
       {/* Nav */}
-      <nav className="flex-1 px-2 py-4 space-y-1">
+      <nav className="flex-1 px-2 py-2 space-y-1">
         {navItems.map((item) => {
           const active =
             pathname === item.href ||
@@ -61,6 +72,22 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {/* AI Credits */}
+      <div className="px-3 py-3 border-t border-border/40">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-muted-foreground">AI Credits</span>
+            <span className="font-medium">50 remaining</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full ig-gradient transition-all"
+              style={{ width: "25%" }}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Account selector */}
       <div className="px-3 py-3 border-t border-border/40">

@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Globe, Palette, User, Shield } from "lucide-react";
+import { PageTransition } from "@/components/page-transition";
 
 export default function SettingsPage() {
   return (
+    <PageTransition>
     <div className="p-6 space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold">Settings</h1>
@@ -97,5 +99,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
+    </PageTransition>
   );
 }

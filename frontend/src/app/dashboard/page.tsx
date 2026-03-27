@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Wand2,
   Calendar,
@@ -12,24 +13,67 @@ import {
   Heart,
   Image as ImageIcon,
 } from "lucide-react";
+import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
+import { StrategySummaryCard } from "@/components/dashboard/strategy-summary-card";
+import { PageTransition } from "@/components/page-transition";
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function formatDate() {
+  return new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+}
 
 const kpis = [
-  { label: "Posts This Week", value: "0 / 7", icon: ImageIcon, color: "text-ig-pink" },
-  { label: "Total Reach", value: "—", icon: Eye, color: "text-blue-500" },
-  { label: "Engagement Rate", value: "—", icon: Heart, color: "text-ig-orange" },
-  { label: "Follower Growth", value: "—", icon: TrendingUp, color: "text-emerald-500" },
+  {
+    label: "Posts This Week",
+    value: "3 / 7",
+    icon: ImageIcon,
+    color: "text-ig-pink",
+    demo: true,
+  },
+  {
+    label: "Total Reach",
+    value: "2.4K",
+    icon: Eye,
+    color: "text-blue-500",
+    demo: true,
+  },
+  {
+    label: "Engagement Rate",
+    value: "4.2%",
+    icon: Heart,
+    color: "text-ig-orange",
+    demo: true,
+  },
+  {
+    label: "Follower Growth",
+    value: "+127",
+    icon: TrendingUp,
+    color: "text-emerald-500",
+    demo: true,
+  },
 ];
 
 export default function DashboardPage() {
   return (
+    <PageTransition>
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            Your Instagram content command center.
-          </p>
+          <h1 className="text-2xl font-bold">
+            {getGreeting()}, Creator!
+          </h1>
+          <p className="text-sm text-muted-foreground">{formatDate()}</p>
         </div>
         <Link href="/studio">
           <Button>
@@ -47,15 +91,33 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">{kpi.label}</p>
-                  <p className="text-2xl font-bold mt-1">{kpi.value}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <p className="text-2xl font-bold">{kpi.value}</p>
+                    {kpi.demo && (
+                      <Badge
+                        variant="outline"
+                        className="text-[9px] text-muted-foreground/60 border-border/40 px-1.5 py-0"
+                      >
+                        Sample
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                <div className={`h-10 w-10 rounded-lg bg-muted/50 flex items-center justify-center ${kpi.color}`}>
+                <div
+                  className={`h-10 w-10 rounded-lg bg-muted/50 flex items-center justify-center ${kpi.color}`}
+                >
                   <kpi.icon className="h-5 w-5" />
                 </div>
               </div>
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Strategy + Onboarding */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <StrategySummaryCard />
+        <OnboardingChecklist />
       </div>
 
       {/* Quick actions */}
@@ -109,29 +171,7 @@ export default function DashboardPage() {
           </Card>
         </Link>
       </div>
-
-      {/* Recent activity placeholder */}
-      <Card className="border-border/40">
-        <CardHeader>
-          <CardTitle className="text-sm">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mb-4">
-              <ImageIcon className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <p className="text-sm font-medium">No posts yet</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Head to the Content Studio to create your first post.
-            </p>
-            <Link href="/studio" className="mt-4">
-              <Button variant="outline" size="sm">
-                Create First Post
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
     </div>
+    </PageTransition>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,17 +15,32 @@ import {
   Zap,
   Send,
   Calendar,
-  CheckCircle,
 } from "lucide-react";
+import { IPhoneMockup } from "@/components/landing/iphone-mockup";
+import { TemplateGallery } from "@/components/studio/template-gallery";
+import { GenerationProgress } from "@/components/studio/generation-progress";
+import { QualityRing } from "@/components/studio/quality-ring";
+import { PageTransition } from "@/components/page-transition";
 
 type ContentType = "image" | "carousel" | "reel";
 type GenerationTier = "standard" | "ai-enhanced";
 
 export default function StudioPage() {
+  return (
+    <Suspense>
+      <StudioContent />
+    </Suspense>
+  );
+}
+
+function StudioContent() {
+  const searchParams = useSearchParams();
+
   const [contentType, setContentType] = useState<ContentType>("image");
   const [tier, setTier] = useState<GenerationTier>("standard");
   const [prompt, setPrompt] = useState("");
   const [selectedPillar, setSelectedPillar] = useState("facts");
+  const [selectedTemplate, setSelectedTemplate] = useState("fact_card");
   const [generating, setGenerating] = useState(false);
   const [result, setResult] = useState<{
     caption: string;
@@ -32,6 +48,14 @@ export default function StudioPage() {
     quality_score: number;
     quality_criteria: Record<string, number>;
   } | null>(null);
+
+  // Read query params for strategy calendar integration
+  useEffect(() => {
+    const topic = searchParams.get("topic");
+    const pillar = searchParams.get("pillar");
+    if (topic) setPrompt(topic);
+    if (pillar) setSelectedPillar(pillar);
+  }, [searchParams]);
 
   const handleGenerate = async () => {
     setGenerating(true);
@@ -46,7 +70,7 @@ export default function StudioPage() {
             category: selectedPillar.toUpperCase(),
             headline: prompt,
             body: "",
-            image_style: "fact_card",
+            image_style: selectedTemplate,
           },
           brand: {
             primary_color: [139, 92, 246],
@@ -66,8 +90,15 @@ export default function StudioPage() {
       });
     } catch {
       setResult({
-        caption: "The silent productivity killer nobody talks about...\n\nSleep deprivation costs the US economy $411 billion annually.",
-        hashtags: ["#productivity", "#sleep", "#health", "#business", "#wellness"],
+        caption:
+          "The silent productivity killer nobody talks about...\n\nSleep deprivation costs the US economy $411 billion annually.",
+        hashtags: [
+          "#productivity",
+          "#sleep",
+          "#health",
+          "#business",
+          "#wellness",
+        ],
         quality_score: 87,
         quality_criteria: {},
       });
@@ -77,6 +108,7 @@ export default function StudioPage() {
   };
 
   return (
+    <PageTransition>
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
@@ -89,6 +121,19 @@ export default function StudioPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Left panel: Controls */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Template gallery */}
+          <Card className="border-border/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Template</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TemplateGallery
+                selected={selectedTemplate}
+                onSelect={setSelectedTemplate}
+              />
+            </CardContent>
+          </Card>
+
           {/* Content type */}
           <Card className="border-border/40">
             <CardHeader className="pb-3">
@@ -98,7 +143,11 @@ export default function StudioPage() {
               <div className="grid grid-cols-3 gap-2">
                 {[
                   { type: "image" as const, label: "Image", icon: ImageIcon },
-                  { type: "carousel" as const, label: "Carousel", icon: Layers },
+                  {
+                    type: "carousel" as const,
+                    label: "Carousel",
+                    icon: Layers,
+                  },
                   { type: "reel" as const, label: "Reel", icon: Video },
                 ].map((ct) => (
                   <button
@@ -175,7 +224,9 @@ export default function StudioPage() {
           {/* Prompt */}
           <Card className="border-border/40">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm">What should this post be about?</CardTitle>
+              <CardTitle className="text-sm">
+                What should this post be about?
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <textarea
@@ -200,7 +251,10 @@ export default function StudioPage() {
                     {[
                       { id: "facts", label: "Facts" },
                       { id: "education", label: "Education" },
-                      { id: "behind-the-scenes", label: "Behind-the-Scenes" },
+                      {
+                        id: "behind-the-scenes",
+                        label: "Behind-the-Scenes",
+                      },
                       { id: "engagement", label: "Engagement" },
                       { id: "reels", label: "Reels" },
                     ].map((p) => (
@@ -255,6 +309,9 @@ export default function StudioPage() {
                   </>
                 )}
               </Button>
+
+              {/* Generation progress */}
+              <GenerationProgress isGenerating={generating} />
             </CardContent>
           </Card>
         </div>
@@ -265,36 +322,45 @@ export default function StudioPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Preview</CardTitle>
-                {result && (
-                  <div className="flex items-center gap-1.5">
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] ${
-                        result.quality_score >= 80
-                          ? "text-emerald-500 border-emerald-500/30"
-                          : "text-amber-500 border-amber-500/30"
-                      }`}
-                    >
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Quality: {result.quality_score}/100
-                    </Badge>
-                  </div>
-                )}
+                {result && <QualityRing score={result.quality_score} />}
               </div>
             </CardHeader>
             <CardContent>
               {result ? (
                 <div className="space-y-4">
-                  {/* Image preview */}
-                  <div className="aspect-square rounded-lg bg-gradient-to-br from-rose-950 to-pink-900 flex items-center justify-center relative overflow-hidden">
-                    <div className="text-center space-y-3 px-8">
-                      <p className="text-[10px] uppercase tracking-[0.3em] text-pink-300">
-                        {selectedPillar.replace("-", " ")}
-                      </p>
-                      <p className="text-xl font-bold text-white leading-tight">
-                        {prompt || "Your generated content"}
-                      </p>
-                    </div>
+                  {/* iPhone mockup preview */}
+                  <div className="flex justify-center">
+                    <IPhoneMockup className="w-[260px]">
+                      <div className="h-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 flex flex-col">
+                        {/* Mock IG header */}
+                        <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10">
+                          <div className="h-6 w-6 rounded-full ig-gradient" />
+                          <span className="text-white text-xs font-medium">
+                            yourbrand
+                          </span>
+                        </div>
+                        {/* Post image */}
+                        <div className="flex-1 bg-gradient-to-br from-rose-950 to-pink-900 flex items-center justify-center relative overflow-hidden p-4">
+                          <div className="text-center space-y-2">
+                            <p className="text-[9px] uppercase tracking-[0.2em] text-pink-300">
+                              {selectedPillar.replace("-", " ")}
+                            </p>
+                            <p className="text-sm font-bold text-white leading-tight">
+                              {prompt || "Your generated content"}
+                            </p>
+                          </div>
+                        </div>
+                        {/* Mock engagement bar */}
+                        <div className="px-3 py-2 space-y-1">
+                          <div className="flex gap-3">
+                            <div className="h-3.5 w-3.5 rounded-full border border-white/30" />
+                            <div className="h-3.5 w-3.5 rounded-full border border-white/30" />
+                            <div className="h-3.5 w-3.5 rounded-full border border-white/30" />
+                          </div>
+                          <div className="h-2 w-16 rounded bg-white/20" />
+                        </div>
+                      </div>
+                    </IPhoneMockup>
                   </div>
 
                   {/* Caption */}
@@ -323,13 +389,17 @@ export default function StudioPage() {
                   </div>
                 </div>
               ) : (
-                <div className="aspect-square rounded-lg border-2 border-dashed border-border/40 flex items-center justify-center">
-                  <div className="text-center space-y-2">
-                    <Wand2 className="h-8 w-8 text-muted-foreground/30 mx-auto" />
-                    <p className="text-sm text-muted-foreground">
-                      Generated content will appear here
-                    </p>
-                  </div>
+                <div className="flex justify-center py-8">
+                  <IPhoneMockup className="w-[260px]">
+                    <div className="h-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 flex items-center justify-center">
+                      <div className="text-center space-y-2 px-6">
+                        <Wand2 className="h-8 w-8 text-white/20 mx-auto" />
+                        <p className="text-xs text-white/30">
+                          Generated content will appear here
+                        </p>
+                      </div>
+                    </div>
+                  </IPhoneMockup>
                 </div>
               )}
             </CardContent>
@@ -337,5 +407,6 @@ export default function StudioPage() {
         </div>
       </div>
     </div>
+    </PageTransition>
   );
 }
