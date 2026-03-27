@@ -61,6 +61,7 @@ function StudioContent() {
   const { brand: savedBrand } = useOnboardingStore();
   const [result, setResult] = useState<{
     imageUrl: string | null;
+    headline: string;
     caption: string;
     hashtags: string[];
     quality_score: number;
@@ -165,29 +166,23 @@ function StudioContent() {
       const captionText = data.caption || "Generated caption will appear here.";
       setResult({
         imageUrl: data.image_url || null,
+        headline: data.headline || captionText.split("\n")[0].slice(0, 60),
         caption: captionText,
         hashtags: data.hashtags || ["#content", "#instagram", "#growth"],
-        quality_score: data.quality_score || 87,
+        quality_score: data.quality_score || 82,
         quality_criteria: data.quality_criteria || {},
       });
       setEditedCaption(captionText);
     } catch {
-      const fallbackCaption =
-        "The silent productivity killer nobody talks about...\n\nSleep deprivation costs the US economy $411 billion annually.";
       setResult({
         imageUrl: null,
-        caption: fallbackCaption,
-        hashtags: [
-          "#productivity",
-          "#sleep",
-          "#health",
-          "#business",
-          "#wellness",
-        ],
-        quality_score: 87,
+        headline: prompt.slice(0, 60),
+        caption: `Let's talk about ${prompt.toLowerCase()}...\n\nThis is something worth understanding.`,
+        hashtags: [`#${selectedPillar}`, "#instagram", "#content"],
+        quality_score: 70,
         quality_criteria: {},
       });
-      setEditedCaption(fallbackCaption);
+      setEditedCaption(`Let's talk about ${prompt.toLowerCase()}...\n\nThis is something worth understanding.`);
     } finally {
       setGenerating(false);
     }
@@ -436,10 +431,10 @@ function StudioContent() {
                             <div className="w-full h-full bg-gradient-to-br from-rose-950 to-pink-900 flex items-center justify-center p-4">
                               <div className="text-center space-y-2">
                                 <p className="text-[9px] uppercase tracking-[0.2em] text-pink-300">
-                                  {selectedPillar.replace("-", " ")}
+                                  {selectedPillar.replace(/-/g, " ")}
                                 </p>
                                 <p className="text-sm font-bold text-white leading-tight">
-                                  {prompt || "Your generated content"}
+                                  {result?.headline || "Your generated content"}
                                 </p>
                               </div>
                             </div>
