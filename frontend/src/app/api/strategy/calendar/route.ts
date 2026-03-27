@@ -14,9 +14,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!body || typeof body !== "object") {
+    if (!body || typeof body !== "object" || (!body.strategy && !body.niche)) {
       return NextResponse.json(
-        { error: "Strategy data is required." },
+        { error: "Strategy data is required. Please generate a strategy first." },
         { status: 400 }
       );
     }
