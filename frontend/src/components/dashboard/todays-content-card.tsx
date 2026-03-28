@@ -6,13 +6,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Sparkles,
   Wand2,
-  Upload,
   Image as ImageIcon,
   Film,
   LayoutGrid,
   Clock,
   CheckCircle2,
 } from "lucide-react";
+import { MarkDoneDialog } from "@/components/dashboard/mark-done-dialog";
 
 interface CalendarSlotData {
   id: string;
@@ -45,7 +45,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
   uploaded: { label: "Uploaded", color: "text-emerald-500", icon: CheckCircle2 },
 };
 
-export function TodaysContentCard({ slot }: { slot: CalendarSlotData | null }) {
+export function TodaysContentCard({ slot, onSlotUpdated }: { slot: CalendarSlotData | null; onSlotUpdated?: () => void }) {
   // No calendar slot for today
   if (!slot) {
     return (
@@ -137,10 +137,12 @@ export function TodaysContentCard({ slot }: { slot: CalendarSlotData | null }) {
                   Create This Post
                 </Button>
               </Link>
-              <Button variant="outline" className="gap-2" disabled>
-                <Upload className="h-4 w-4" />
-                I Already Made This
-              </Button>
+              <MarkDoneDialog
+                slotId={slot.id}
+                topic={slot.topic}
+                contentType={slot.contentType}
+                onMarkedDone={onSlotUpdated}
+              />
             </div>
           )}
           {isCompleted && (

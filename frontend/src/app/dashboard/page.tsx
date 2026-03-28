@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -95,13 +95,17 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchStats = useCallback(() => {
     fetch("/api/dashboard/stats")
       .then((r) => (r.ok ? r.json() : null))
       .then(setStats)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   const isNewUser = stats?.isNewUser ?? true;
 
@@ -211,7 +215,7 @@ export default function DashboardPage() {
             {/* ─── Daily Creative Cockpit ─────────────────────────── */}
 
             {/* 1. Today's Content Card (hero) */}
-            <TodaysContentCard slot={stats?.todaySlot ?? null} />
+            <TodaysContentCard slot={stats?.todaySlot ?? null} onSlotUpdated={fetchStats} />
 
             {/* 2. Weekly Strip */}
             {stats?.weekSlots && stats.weekSlots.length > 0 && (
