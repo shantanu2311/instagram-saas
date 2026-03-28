@@ -148,8 +148,19 @@ export default function DesignPreviewPage() {
       brandPositioning: strategy?.brandPositioning,
     };
 
-    // Add placeholder queue items
+    // Add queue items from calendar slots
     for (const slot of slots) {
+      // Convert suggestedTime (e.g. "7:30 AM", "6:30 PM") to 24h format for scheduledFor
+      const time = slot.suggestedTime || "7:30 AM";
+      const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      let hours = match ? parseInt(match[1]) : 7;
+      const mins = match ? match[2] : "30";
+      if (match) {
+        if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
+        if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
+      }
+      const timeStr = `${String(hours).padStart(2, "0")}:${mins}:00`;
+
       queueStore.addItem({
         id: `q-${slot.date}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         calendarSlotDate: slot.date,
@@ -160,10 +171,10 @@ export default function DesignPreviewPage() {
         caption: "",
         hashtags: [],
         qualityScore: 0,
-        suggestedTime: slot.suggestedTime || "7:30 AM",
+        suggestedTime: time,
         status: "generating",
         createdAt: new Date().toISOString(),
-        scheduledFor: `${slot.date}T07:30:00`,
+        scheduledFor: `${slot.date}T${timeStr}`,
       });
     }
 

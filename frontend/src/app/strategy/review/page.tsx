@@ -260,8 +260,8 @@ export default function ReviewPage() {
         return; // Already navigated
       }
     } catch {
-      // Mock calendar fallback
-      setCalendar(buildMockCalendar());
+      setApproving(false);
+      return; // Stay on page — calendar generation failed
     }
     setApproving(false);
     router.push("/strategy/calendar");
@@ -810,50 +810,3 @@ function ReelStructureCard({ reel }: { reel: any }) {
   );
 }
 
-function buildMockCalendar() {
-  const pillars = ["Education", "Entertainment", "Promotion", "Community"];
-  const types = ["reel", "carousel", "image", "reel", "carousel"];
-  const topics = [
-    "5 tips for beginners",
-    "Day in the life reel",
-    "Product showcase carousel",
-    "Community Q&A",
-    "Trending audio reel",
-    "Before/after transformation",
-    "Industry myth busting",
-    "Behind the scenes",
-    "Customer spotlight",
-    "Weekly roundup",
-  ];
-
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const slots: any[] = [];
-
-  // Generate 5 slots per week
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(year, month, d);
-    const dow = date.getDay();
-    if (dow === 0 || dow === 6) continue; // skip weekends
-    slots.push({
-      date: date.toISOString().split("T")[0],
-      day: d,
-      dayOfWeek: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dow],
-      pillar: pillars[d % pillars.length],
-      contentType: types[d % types.length],
-      topic: topics[d % topics.length],
-      headline: `Draft headline for ${topics[d % topics.length]}`,
-      suggestedTime: d % 2 === 0 ? "7:30 AM" : "6:30 PM",
-      isTrendBased: d % 4 === 0,
-    });
-  }
-
-  return {
-    id: "mock-calendar-1",
-    month: month + 1,
-    year,
-    slots,
-  };
-}

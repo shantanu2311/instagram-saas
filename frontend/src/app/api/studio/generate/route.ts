@@ -8,6 +8,7 @@ import {
   generateImage,
   buildBackendBrand,
   buildFactCardTemplate,
+  buildCarouselTemplate,
   mediaUrl,
 } from "@/lib/backend-client";
 import { auth } from "@/lib/auth";
@@ -84,11 +85,19 @@ export async function POST(request: Request) {
     let image_url: string | null = null;
     const contentType = body.content_type || "image";
     if (contentType !== "reel") {
-      const template = buildFactCardTemplate({
-        headline: result.headline,
-        body: result.caption.slice(0, 200),
-        category: (body.pillar || "facts").toUpperCase(),
-      });
+      const template = contentType === "carousel"
+        ? buildCarouselTemplate({
+            title: result.headline,
+            slides: (result.caption || "").split("\n").filter((l: string) => l.trim()).slice(0, 5).map((line: string) => ({
+              headline: line.replace(/^\d+\.\s*/, "").slice(0, 60),
+              body: "",
+            })),
+          })
+        : buildFactCardTemplate({
+            headline: result.headline,
+            body: result.caption.slice(0, 200),
+            category: (body.pillar || "facts").toUpperCase(),
+          });
       const backendBrand = buildBackendBrand({
         primaryColor: body.brand?.primary_color
           ? `#${body.brand.primary_color.map((c: number) => c.toString(16).padStart(2, "0")).join("")}`
