@@ -145,6 +145,7 @@ model Brand {
   products      Product[]
   moments       BrandMoment[]
   weeklyBriefs  WeeklyBrief[]
+  ideas         ContentIdea[]
 
   @@index([userId])
 }
@@ -345,4 +346,28 @@ model WeeklyBrief {
 
   @@unique([brandId, weekStartDate])
   @@index([brandId])
+}
+
+// ─── Content Inspiration Inbox ──────────────────────────────
+
+model ContentIdea {
+  id          String    @id @default(cuid())
+  brandId     String
+  title       String
+  description String?   @db.Text
+  sourceUrl   String?
+  sourceType  String?   // "article" | "social" | "competitor" | "manual"
+  contentType String?   // "image" | "carousel" | "reel"
+  pillar      String?
+  tags        Json      @default("[]")
+  notes       String?   @db.Text
+  status      String    @default("new") // "new" | "used" | "archived"
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
+  @@index([status])
 }

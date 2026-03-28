@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
-import { VALID_MOMENT_TYPES } from "@/lib/constants";
+import { VALID_IDEA_STATUSES } from "@/lib/constants";
 
 export async function PATCH(
   request: Request,
@@ -15,6 +15,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any;
   try {
     body = await request.json();
@@ -25,36 +26,43 @@ export async function PATCH(
     );
   }
 
-  const moment = await prisma.brandMoment.findFirst({
+  const idea = await prisma.contentIdea.findFirst({
     where: { id },
     include: { brand: { select: { userId: true } } },
   });
-  if (!moment || moment.brand.userId !== session.user.id) {
+  if (!idea || idea.brand.userId !== session.user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (body.type && !VALID_MOMENT_TYPES.includes(body.type)) {
+  if (body.status && !VALID_IDEA_STATUSES.includes(body.status)) {
     return NextResponse.json(
-      { error: `Invalid type. Allowed: ${VALID_MOMENT_TYPES.join(", ")}` },
+      { error: `Invalid status. Allowed: ${VALID_IDEA_STATUSES.join(", ")}` },
       { status: 400 }
     );
   }
 
-  const updated = await prisma.brandMoment.update({
+  const updated = await prisma.contentIdea.update({
     where: { id },
     data: {
-      title: body.title?.trim() || moment.title,
+      title: body.title?.trim() || idea.title,
       description:
-        body.description !== undefined
-          ? body.description
-          : moment.description,
-      date: body.date ? new Date(body.date) : moment.date,
-      type: body.type || moment.type,
-      isRecurring:
-        body.isRecurring !== undefined
-          ? body.isRecurring
-          : moment.isRecurring,
-      color: body.color !== undefined ? body.color : moment.color,
+        body.description !== undefined ? body.description : idea.description,
+      sourceUrl:
+        body.sourceUrl !== undefined ? body.sourceUrl : idea.sourceUrl,
+      sourceType:
+        body.sourceType !== undefined ? body.sourceType : idea.sourceType,
+      contentType:
+        body.contentType !== undefined ? body.contentType : idea.contentType,
+      pillar: body.pillar !== undefined ? body.pillar : idea.pillar,
+      tags:
+        body.tags !== undefined
+          ? Array.isArray(body.tags)
+            ? body.tags
+            : idea.tags
+          : idea.tags,
+      notes: body.notes !== undefined ? body.notes : idea.notes,
+      status: body.status || idea.status,
+      usedAt: body.status === "used" ? new Date() : idea.usedAt,
     },
   });
   return NextResponse.json(updated);
@@ -71,14 +79,14 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  const moment = await prisma.brandMoment.findFirst({
+  const idea = await prisma.contentIdea.findFirst({
     where: { id },
     include: { brand: { select: { userId: true } } },
   });
-  if (!moment || moment.brand.userId !== session.user.id) {
+  if (!idea || idea.brand.userId !== session.user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  await prisma.brandMoment.delete({ where: { id } });
+  await prisma.contentIdea.delete({ where: { id } });
   return NextResponse.json({ deleted: true });
 }

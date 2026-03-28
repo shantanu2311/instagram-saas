@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
-import { VALID_MOMENT_TYPES } from "@/lib/constants";
+import { VALID_IDEA_STATUSES, VALID_CONTENT_TYPES } from "@/lib/constants";
 
 export async function GET(request: Request) {
   const limited = rateLimit(request, "default");
@@ -12,18 +12,32 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(request.url);
-  const brandId = url.searchParams.get("brandId");
+  const status = url.searchParams.get("status");
+  const pillar = url.searchParams.get("pillar");
+  const contentType = url.searchParams.get("contentType");
 
-  const brand = brandId
-    ? await prisma.brand.findFirst({ where: { id: brandId, userId: session.user.id } })
-    : await prisma.brand.findFirst({ where: { userId: session.user.id } });
+  const brand = await prisma.brand.findFirst({
+    where: { userId: session.user.id },
+    select: { id: true },
+  });
   if (!brand) return NextResponse.json([]);
 
-  const moments = await prisma.brandMoment.findMany({
-    where: { brandId: brand.id },
-    orderBy: { date: "asc" },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const where: any = { brandId: brand.id };
+  if (status && VALID_IDEA_STATUSES.includes(status as any)) {
+    where.status = status;
+  }
+  if (pillar) where.pillar = pillar;
+  if (contentType && VALID_CONTENT_TYPES.includes(contentType as any)) {
+    where.contentType = contentType;
+  }
+
+  const ideas = await prisma.contentIdea.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: 100,
   });
-  return NextResponse.json(moments);
+  return NextResponse.json(ideas);
 }
 
 export async function POST(request: Request) {
@@ -33,6 +47,7 @@ export async function POST(request: Request) {
   if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any;
   try {
     body = await request.json();
@@ -45,19 +60,10 @@ export async function POST(request: Request) {
 
   if (!body.title?.trim())
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
-  if (!body.date)
-    return NextResponse.json({ error: "Date is required" }, { status: 400 });
-  if (!body.type)
-    return NextResponse.json({ error: "Type is required" }, { status: 400 });
-
-  if (!VALID_MOMENT_TYPES.includes(body.type))
-    return NextResponse.json(
-      { error: `Invalid type. Allowed: ${VALID_MOMENT_TYPES.join(", ")}` },
-      { status: 400 }
-    );
 
   const brand = await prisma.brand.findFirst({
     where: { userId: session.user.id },
+    select: { id: true },
   });
   if (!brand)
     return NextResponse.json(
@@ -65,16 +71,18 @@ export async function POST(request: Request) {
       { status: 400 }
     );
 
-  const moment = await prisma.brandMoment.create({
+  const idea = await prisma.contentIdea.create({
     data: {
       brandId: brand.id,
-      title: body.title.trim(),
+      title: body.title.trim().slice(0, 200),
       description: body.description || null,
-      date: new Date(body.date),
-      type: body.type,
-      isRecurring: body.isRecurring || false,
-      color: body.color || null,
+      sourceUrl: body.sourceUrl || null,
+      sourceType: body.sourceType || "manual",
+      contentType: body.contentType || null,
+      pillar: body.pillar || null,
+      tags: Array.isArray(body.tags) ? body.tags : [],
+      notes: body.notes || null,
     },
   });
-  return NextResponse.json(moment);
+  return NextResponse.json(idea);
 }

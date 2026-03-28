@@ -71,7 +71,15 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `/` — Landing page (hero, features, pricing, CTA)
 - `/auth/signin`, `/auth/signup` — Authentication (has client-side validation)
 - `/onboarding` — 4-step brand setup (own layout, no sidebar)
-- `/dashboard` — Home dashboard with getting started checklist
+- `/dashboard` — Home dashboard with getting started checklist + Instagram Sync (Import All)
+- `/dashboard/analytics` — Analytics dashboard with Recharts charts, KPIs, AI insights
+- `/dashboard/grid-preview` — Instagram grid preview (IPhoneMockup, 3x3 grid of published + upcoming posts)
+- `/dashboard/inspiration` — Content idea inbox (CRUD, filter by status/pillar/type, "Use This" → studio)
+- `/dashboard/strategy-insights` — AI strategy recommendations from performance data, "Apply" to Zustand store
+- `/dashboard/media` — Media library (upload, AI-generated, synced)
+- `/dashboard/products` — Product catalog for brand
+- `/dashboard/moments` — Brand moments (launches, events, milestones)
+- `/dashboard/calendar` — Calendar view
 - `/strategy` — Strategy hub
 - `/strategy/discovery` — 9-step discovery wizard (clickable step dots for back-navigation)
 - `/strategy/research` — Research simulation + strategy generation
@@ -115,6 +123,14 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `GET /api/calendar/slots?from=&to=` — Query calendar slots by date range (auth required, rate limited, max 90-day range, requires at least one date bound)
 - `GET /api/calendar/slots/[id]` — Get single slot with linked content (auth required, rate limited)
 - `PATCH /api/calendar/slots/[id]` — Update slot status/contentId (auth required, ownership check, contentId ownership verification, rate limited)
+- `GET /api/analytics?period=30` — Analytics KPIs, engagement over time, by content type, top posts (auth + rate limited)
+- `POST /api/analytics/insights` — AI-powered analytics insights from performance data (auth + rate limited, generate tier)
+- `GET /api/grid-preview` — Published + upcoming posts for Instagram grid preview (auth + rate limited)
+- `GET /api/ideas` — List content ideas with ?status=&pillar=&contentType= filters (auth + rate limited)
+- `POST /api/ideas` — Create content idea (auth + rate limited)
+- `PATCH /api/ideas/[id]` — Update idea (auth + ownership check)
+- `DELETE /api/ideas/[id]` — Delete idea (auth + ownership check)
+- `POST /api/strategy/insights` — AI strategy recommendations from current strategy + performance data (auth + rate limited, generate tier)
 
 ## Data Persistence (Prisma → PostgreSQL)
 
@@ -127,6 +143,16 @@ All routes now use real Prisma queries instead of stubs:
 - **Queue Status**: `POST /api/queue/status` syncs approve/reject/publish status to DB
 - **Image Gen**: `POST /api/studio/generate` calls backend Pillow generator, proxied via `/api/media/proxy`
 - **Prisma v7**: Requires `@prisma/adapter-pg` with `pg.Pool` — see `src/lib/db.ts`
+
+## Shared Constants (`src/lib/constants.ts`)
+
+Shared type constants used across API routes and UI:
+- `VALID_CONTENT_TYPES` — `["image", "carousel", "reel"]`
+- `VALID_MOMENT_TYPES` — `["launch", "event", "milestone", "collaboration", "seasonal"]`
+- `VALID_MEDIA_SOURCES` — `["upload", "ai-generated", "instagram-sync"]`
+- `VALID_IDEA_STATUSES` — `["new", "used", "archived"]`
+- `VALID_IDEA_SOURCE_TYPES` — `["article", "social", "competitor", "manual"]`
+- `PERIOD_OPTIONS` — `[{value: 7, label: "7d"}, {value: 30, label: "30d"}, {value: 90, label: "90d"}]`
 
 ## Stores (Zustand + sessionStorage)
 
@@ -154,6 +180,35 @@ Dashboard transforms from a one-time strategy tool into a daily habit-forming cr
 **Dashboard Loading**:
 - Shows animated skeleton while stats load to prevent flash from new-user → active-user state
 
+## Creator Workflow Features (Sprint 2)
+
+### Analytics Dashboard (`/dashboard/analytics`)
+- Recharts `ComposedChart` (likes/comments lines) + `BarChart` (by content type)
+- 4 KPI cards mapped from config array, period selector pills (7d/30d/90d)
+- AI Insights panel: sends trimmed analytics payload (kpis + byContentType + top 3 posts) to OpenAI
+- API: `GET /api/analytics` computes server-side from PostAnalytics + GeneratedContent
+
+### Instagram Grid Preview (`/dashboard/grid-preview`)
+- Uses `IPhoneMockup` component with mock profile header + 3x3 CSS grid
+- Shows last 6 published + next 9 upcoming posts, `allPosts` memoized with `useMemo`
+- GridCell component: real thumbnails for published, type-icon placeholders for upcoming with "Scheduled" overlay
+
+### Content Inspiration Inbox (`/dashboard/inspiration`)
+- Full CRUD: inline form (title, sourceUrl, contentType, pillar, notes), filter pills (All/New/Used/Archived)
+- "Use This" links to `/studio?topic={title}`, archive/mark-used actions
+- ContentIdea model: brandId, title, description, sourceUrl, sourceType, contentType, pillar, tags (Json), notes, status
+
+### Strategy Evolution (`/dashboard/strategy-insights`)
+- AI analyzes current strategy (from Zustand) + performance data (from DB) → recommendations
+- "Apply" button updates Zustand strategy store client-side (no server-side strategy persistence)
+- Performance summary (best/worst pillar and type), period review with trend indicator
+
+### Instagram Sync Improvements
+- Auto-match calendar slots: imported posts match slots ±1 day by date proximity
+- Creates PostAnalytics record with likes/comments on import (enables analytics)
+- "Import All" button uses `Promise.allSettled` for concurrent imports
+- Shared `importPost()` helper eliminates duplicate fetch logic
+
 ## Key Patterns & Gotchas
 
 ### Next.js 16 Proxy (not Middleware)
@@ -176,6 +231,16 @@ try {
 }
 ```
 This is implemented on: strategy/generate, studio/generate, scrape-website, calendar, publish, batch-generate.
+
+### callClaude() Signature
+- `callClaude()` takes a single options object: `callClaude({ system, userMessage, model?, maxTokens?, webSearch? })`
+- NOT two positional arguments — `callClaude(system, message)` will fail
+
+### Prisma v7 Migrations
+- Schema has NO `url` in datasource block (Prisma v7 moved this to `prisma/prisma.config.ts`)
+- Must pass `--config prisma/prisma.config.ts` flag: `npx prisma migrate dev --config prisma/prisma.config.ts --name migration-name`
+- `npx prisma generate` also needs `--config prisma/prisma.config.ts` (or it auto-detects)
+- PostgreSQL must be running locally for migrations
 
 ### Content Generation
 - Studio generate sanitizes topic: strips `<tags>`, truncates to 500 chars

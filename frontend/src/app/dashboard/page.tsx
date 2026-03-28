@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -129,8 +129,10 @@ export default function DashboardPage() {
     externalPosts: SyncExternalPost[];
   } | null>(null);
   const [importingId, setImportingId] = useState<string | null>(null);
+  const [importingAll, setImportingAll] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
 
-  const monday = getMonday();
+  const monday = useMemo(() => getMonday(), []);
 
   const fetchStats = useCallback(() => {
     fetch("/api/dashboard/stats")
@@ -159,6 +161,7 @@ export default function DashboardPage() {
       if (res.ok) {
         const data = await res.json();
         setSyncResults(data);
+        setLastSyncedAt(new Date());
       }
     } catch {
       // silently fail
@@ -167,8 +170,7 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleImportPost(post: SyncExternalPost) {
-    setImportingId(post.id);
+  async function importPost(post: SyncExternalPost): Promise<boolean> {
     try {
       const res = await fetch("/api/instagram/import", {
         method: "POST",
@@ -178,10 +180,11 @@ export default function DashboardPage() {
           caption: post.caption,
           mediaType: post.mediaType.toLowerCase(),
           timestamp: post.timestamp,
+          likes: post.likes,
+          comments: post.comments,
         }),
       });
       if (res.ok) {
-        // Remove from list
         setSyncResults((prev) =>
           prev
             ? {
@@ -191,13 +194,28 @@ export default function DashboardPage() {
               }
             : null
         );
-        fetchStats();
+        return true;
       }
     } catch {
       // silently fail
-    } finally {
-      setImportingId(null);
     }
+    return false;
+  }
+
+  async function handleImportPost(post: SyncExternalPost) {
+    setImportingId(post.id);
+    await importPost(post);
+    setImportingId(null);
+    fetchStats();
+  }
+
+  async function handleImportAll() {
+    if (!syncResults?.externalPosts.length) return;
+    setImportingAll(true);
+    const posts = [...syncResults.externalPosts];
+    await Promise.allSettled(posts.map((post) => importPost(post)));
+    setImportingAll(false);
+    fetchStats();
   }
 
   const isNewUser = stats?.isNewUser ?? true;
@@ -378,17 +396,38 @@ export default function DashboardPage() {
                       </Button>
                     </div>
                   </div>
+                  {lastSyncedAt && (
+                    <p className="text-[10px] text-muted-foreground mt-1 text-right">
+                      Last synced: {lastSyncedAt.toLocaleTimeString()}
+                    </p>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {syncResults ? (
                     <div className="space-y-3">
-                      <p className="text-xs text-muted-foreground">
-                        Found {syncResults.total} posts on Instagram
-                        {syncResults.synced > 0 &&
-                          ` (${syncResults.synced} already tracked)`}
-                        {syncResults.externalPosts.length > 0 &&
-                          ` — ${syncResults.externalPosts.length} external`}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs text-muted-foreground">
+                          Found {syncResults.total} posts on Instagram
+                          {syncResults.synced > 0 &&
+                            ` (${syncResults.synced} already tracked)`}
+                          {syncResults.externalPosts.length > 0 &&
+                            ` — ${syncResults.externalPosts.length} external`}
+                        </p>
+                        {syncResults.externalPosts.length > 1 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleImportAll}
+                            disabled={importingAll}
+                            className="gap-1 text-xs"
+                          >
+                            {importingAll ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : null}
+                            Import All ({syncResults.externalPosts.length})
+                          </Button>
+                        )}
+                      </div>
 
                       {syncResults.externalPosts.length > 0 && (
                         <div className="space-y-2">

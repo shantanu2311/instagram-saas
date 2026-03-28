@@ -18,6 +18,9 @@ import {
   Image as ImageIcon,
   Package,
   CalendarHeart,
+  Grid3x3,
+  Bookmark,
+  TrendingUp,
 } from "lucide-react";
 
 const navItems = [
@@ -30,7 +33,10 @@ const navItems = [
   { href: "/dashboard/media", label: "Media Library", icon: ImageIcon },
   { href: "/dashboard/products", label: "Products", icon: Package },
   { href: "/dashboard/moments", label: "Moments", icon: CalendarHeart },
+  { href: "/dashboard/grid-preview", label: "Grid Preview", icon: Grid3x3 },
+  { href: "/dashboard/inspiration", label: "Inspiration", icon: Bookmark },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
+  { href: "/dashboard/strategy-insights", label: "Strategy Insights", icon: TrendingUp },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/settings/billing", label: "Billing", icon: CreditCard },
 ];
