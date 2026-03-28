@@ -15,6 +15,9 @@ import {
   Plus,
   ListChecks,
   Hash,
+  Image as ImageIcon,
+  Package,
+  CalendarHeart,
 } from "lucide-react";
 
 const navItems = [
@@ -24,6 +27,9 @@ const navItems = [
   { href: "/queue", label: "Content Queue", icon: ListChecks },
   { href: "/studio/hashtags", label: "Hashtag Explorer", icon: Hash },
   { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
+  { href: "/dashboard/media", label: "Media Library", icon: ImageIcon },
+  { href: "/dashboard/products", label: "Products", icon: Package },
+  { href: "/dashboard/moments", label: "Moments", icon: CalendarHeart },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
   { href: "/settings/billing", label: "Billing", icon: CreditCard },

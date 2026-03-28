@@ -72,6 +72,8 @@ export async function POST(request: Request) {
     // Strategy context (optional — passed from frontend if strategy exists)
     const strategy: StrategyContext | null = body.strategy || null;
 
+    const slideCount = Math.min(10, Math.max(2, Number(body.slide_count) || 5));
+
     const result = await generateCaption({
       topic: body.topic || "Instagram post",
       pillar: body.pillar || "facts",
@@ -79,19 +81,21 @@ export async function POST(request: Request) {
       style: body.image_style || "fact_card",
       brand,
       strategy,
+      slideCount,
     });
 
     // Generate image via backend (if running)
     let image_url: string | null = null;
     const contentType = body.content_type || "image";
     if (contentType !== "reel") {
+      const slides = result.slides || (result.caption || "").split("\n").filter((l: string) => l.trim()).slice(0, slideCount).map((line: string) => ({
+            headline: line.replace(/^\d+\.\s*/, "").slice(0, 60),
+            body: "",
+          }));
       const template = contentType === "carousel"
         ? buildCarouselTemplate({
             title: result.headline,
-            slides: (result.caption || "").split("\n").filter((l: string) => l.trim()).slice(0, 5).map((line: string) => ({
-              headline: line.replace(/^\d+\.\s*/, "").slice(0, 60),
-              body: "",
-            })),
+            slides,
           })
         : buildFactCardTemplate({
             headline: result.headline,
@@ -123,6 +127,7 @@ export async function POST(request: Request) {
       headline: result.headline,
       caption: result.caption,
       hashtags: result.hashtags,
+      slides: contentType === "carousel" ? (result.slides || []) : undefined,
       quality_score: result.quality_score,
       quality_criteria: result.quality_criteria,
       content_type: contentType,

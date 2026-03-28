@@ -95,12 +95,14 @@ export interface GenerateContentRequest {
   style: string;
   brand: BrandContext;
   strategy?: StrategyContext | null;
+  slideCount?: number;
 }
 
 export interface GenerateContentResult {
   headline: string;
   caption: string;
   hashtags: string[];
+  slides?: Array<{ headline: string; body: string }>;
   quality_score: number;
   quality_criteria: {
     hook_strength: number;

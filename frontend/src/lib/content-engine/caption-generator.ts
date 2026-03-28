@@ -55,8 +55,25 @@ RULES:
 5. Generate 8-12 relevant hashtags mixing branded, niche, and reach tags
 6. Headline must be punchy (max 10 words) for the image overlay
 7. Match the brand's tone exactly — ${tone}${req.brand.sampleCaptions?.length ? `\n8. Study the few-shot voice examples above. Mirror their sentence structure, vocabulary level, emoji usage, and personality. The output should feel like the same person wrote it.` : ""}
+${req.contentType === "carousel" ? `\n9. Generate exactly N slides (specified in topic). Each slide should cover one distinct point. Headlines max 8 words. Body 1-2 sentences.` : ""}
 
-Return ONLY valid JSON with this exact structure:
+${req.contentType === "carousel" ? `Return ONLY valid JSON with this exact structure:
+{
+  "headline": "carousel title for cover slide",
+  "slides": [
+    { "headline": "slide 1 headline (max 8 words)", "body": "1-2 sentence explanation" },
+    ...
+  ],
+  "caption": "full caption with \\n line breaks",
+  "hashtags": ["#tag1", "#tag2", ...],
+  "quality_scores": {
+    "hook_strength": <1-10>,
+    "caption_quality": <1-10>,
+    "hashtag_relevance": <1-10>,
+    "cta_strength": <1-10>,
+    "brand_alignment": <1-10>
+  }
+}` : `Return ONLY valid JSON with this exact structure:
 {
   "headline": "short catchy headline for image overlay",
   "caption": "full caption with \\n line breaks",
@@ -68,7 +85,7 @@ Return ONLY valid JSON with this exact structure:
     "cta_strength": <1-10>,
     "brand_alignment": <1-10>
   }
-}`;
+}`}`;
 
   return prompt;
 }
@@ -76,9 +93,13 @@ Return ONLY valid JSON with this exact structure:
 export async function generateCaption(
   req: GenerateContentRequest
 ): Promise<GenerateContentResult> {
+  const userMessage = req.contentType === "carousel"
+    ? `Create an Instagram carousel post about: ${req.topic}\n\nGenerate exactly ${req.slideCount || 5} slides.`
+    : `Create an Instagram ${req.contentType} post about: ${req.topic}`;
+
   const text = await callClaude({
     system: buildSystemPrompt(req),
-    userMessage: `Create an Instagram ${req.contentType} post about: ${req.topic}`,
+    userMessage,
     model: "fast",
     maxTokens: 1024,
   });
@@ -106,6 +127,7 @@ export async function generateCaption(
     headline: parsed.headline || req.topic.slice(0, 60),
     caption: parsed.caption || "",
     hashtags: parsed.hashtags || ["#content", "#instagram"],
+    slides: parsed.slides || undefined,
     quality_score: Math.min(avgScore, 100),
     quality_criteria: {
       hook_strength: hookStrength,

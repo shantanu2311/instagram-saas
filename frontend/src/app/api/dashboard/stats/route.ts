@@ -148,9 +148,16 @@ export async function GET(request: Request) {
     });
   }
 
+  // Check if user has an active Instagram account
+  const igAccount = await prisma.instagramAccount.findFirst({
+    where: { userId, isActive: true },
+    select: { id: true },
+  });
+
   return NextResponse.json({
     isNewUser: totalContent === 0 && !brand,
     hasBrand: !!brand,
+    hasInstagram: !!igAccount,
     postsThisWeek,
     totalContent,
     drafts,

@@ -111,6 +111,9 @@ function StudioContent() {
   const [facelessMode, setFacelessMode] = useState(false);
   const [reelScript, setReelScript] = useState<ReelScriptResult | null>(null);
   const [activeScene, setActiveScene] = useState<number | null>(null);
+  const [slideCount, setSlideCount] = useState(5);
+  const [carouselSlides, setCarouselSlides] = useState<Array<{ headline: string; body: string }>>([]);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const { strategy } = useStrategyStore();
   const { brand: savedBrand } = useOnboardingStore();
   const [result, setResult] = useState<{
@@ -237,9 +240,14 @@ function StudioContent() {
             brand_name: savedBrand.brandHashtag?.replace("#", "") || "My Brand",
           },
           strategy: strategyContext,
+          ...(contentType === "carousel" ? { slide_count: slideCount } : {}),
         }),
       });
       const data = await res.json();
+      if (contentType === "carousel" && data.slides) {
+        setCarouselSlides(data.slides);
+        setActiveSlideIndex(0);
+      }
       const captionText = data.caption || "Generated caption will appear here.";
       setResult({
         imageUrl: data.image_url || null,
@@ -523,6 +531,41 @@ function StudioContent() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Carousel settings */}
+          {contentType === "carousel" && (
+            <Card className="border-border/40">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-ig-pink" />
+                  Carousel Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-xs font-medium mb-2">Number of Slides</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setSlideCount(Math.max(2, slideCount - 1))}
+                      disabled={slideCount <= 2}
+                      className="h-8 w-8 rounded-lg border border-border/40 flex items-center justify-center text-sm font-medium hover:bg-muted/60 disabled:opacity-40"
+                    >
+                      &minus;
+                    </button>
+                    <span className="text-lg font-semibold w-8 text-center">{slideCount}</span>
+                    <button
+                      onClick={() => setSlideCount(Math.min(10, slideCount + 1))}
+                      disabled={slideCount >= 10}
+                      className="h-8 w-8 rounded-lg border border-border/40 flex items-center justify-center text-sm font-medium hover:bg-muted/60 disabled:opacity-40"
+                    >
+                      +
+                    </button>
+                    <span className="text-[10px] text-muted-foreground">2-10 slides</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Generation tier */}
           <Card className="border-border/40">
@@ -1051,6 +1094,167 @@ function StudioContent() {
               </p>
             </CardContent>
           </Card>
+        ) : contentType === "carousel" && carouselSlides.length > 0 && result ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Layers className="h-4 w-4 text-ig-pink" />
+                Carousel Preview
+              </h3>
+              <QualityRing score={result.quality_score} />
+            </div>
+            <IPhoneMockup className="w-full max-w-[280px] mx-auto">
+              <div className="h-full bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 flex flex-col">
+                <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/10">
+                  <div className="h-5 w-5 rounded-full ig-gradient" />
+                  <span className="text-white text-[10px] font-medium">
+                    {savedBrand.brandHashtag?.replace("#", "") || "yourbrand"}
+                  </span>
+                </div>
+                <div
+                  className="flex-1 flex flex-col items-center justify-center p-5 text-center"
+                  style={{
+                    background: `linear-gradient(135deg, ${savedBrand.primaryColor}, ${savedBrand.secondaryColor})`,
+                  }}
+                >
+                  {activeSlideIndex === 0 ? (
+                    <p className="text-sm font-bold text-white leading-tight">
+                      {result.headline}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-medium text-white/60">
+                        {String(activeSlideIndex).padStart(2, "0")}
+                      </p>
+                      <p className="text-xs font-bold text-white leading-tight">
+                        {carouselSlides[activeSlideIndex - 1]?.headline}
+                      </p>
+                      <p className="text-[10px] text-white/80 leading-relaxed">
+                        {carouselSlides[activeSlideIndex - 1]?.body}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="px-3 py-2 flex items-center justify-center gap-1">
+                  {Array.from({ length: carouselSlides.length + 1 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-1.5 rounded-full transition-all ${
+                        i === activeSlideIndex ? "w-4 bg-ig-pink" : "w-1.5 bg-white/30"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </IPhoneMockup>
+            {/* Navigation arrows */}
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={() => setActiveSlideIndex(Math.max(0, activeSlideIndex - 1))}
+                disabled={activeSlideIndex === 0}
+                className="h-8 w-8 rounded-full border border-border/40 flex items-center justify-center hover:bg-muted/60 disabled:opacity-30"
+              >
+                &larr;
+              </button>
+              <span className="text-xs text-muted-foreground">
+                {activeSlideIndex + 1} / {carouselSlides.length + 1}
+              </span>
+              <button
+                onClick={() => setActiveSlideIndex(Math.min(carouselSlides.length, activeSlideIndex + 1))}
+                disabled={activeSlideIndex >= carouselSlides.length}
+                className="h-8 w-8 rounded-full border border-border/40 flex items-center justify-center hover:bg-muted/60 disabled:opacity-30"
+              >
+                &rarr;
+              </button>
+            </div>
+            {/* Editable slides list */}
+            <Card className="border-border/40">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Edit Slides</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {carouselSlides.map((slide, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setActiveSlideIndex(i + 1)}
+                    className={`rounded-lg border p-3 space-y-1.5 cursor-pointer transition-all ${
+                      activeSlideIndex === i + 1 ? "border-ig-pink bg-ig-pink/5" : "border-border/40 hover:border-ig-pink/20"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        Slide {i + 1}
+                      </span>
+                    </div>
+                    <input
+                      type="text"
+                      value={slide.headline}
+                      onChange={(e) => {
+                        const updated = [...carouselSlides];
+                        updated[i] = { ...updated[i], headline: e.target.value };
+                        setCarouselSlides(updated);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full text-xs font-semibold bg-transparent border-none outline-none"
+                      placeholder="Slide headline..."
+                    />
+                    <input
+                      type="text"
+                      value={slide.body}
+                      onChange={(e) => {
+                        const updated = [...carouselSlides];
+                        updated[i] = { ...updated[i], body: e.target.value };
+                        setCarouselSlides(updated);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full text-[11px] text-muted-foreground bg-transparent border-none outline-none"
+                      placeholder="Slide body text..."
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Caption */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium">Caption</p>
+                <span className="text-[10px] text-muted-foreground">
+                  {editedCaption.length} / 2,200
+                </span>
+              </div>
+              <div className="rounded-lg border border-border/40 p-3">
+                <textarea
+                  value={editedCaption}
+                  onChange={(e) => setEditedCaption(e.target.value)}
+                  className="w-full text-sm leading-relaxed bg-transparent border-0 resize-none focus:outline-none focus:ring-0 min-h-[80px]"
+                  rows={4}
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  {result.hashtags.join(" ")}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={handlePostNow} disabled={posting}>
+                {posting ? "Publishing..." : postSuccess ? "Posted!" : <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Post Now
+                </>}
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={handleSchedule}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Schedule
+              </Button>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="ghost" size="sm" onClick={handleSaveDraft}>
+                Save Draft
+              </Button>
+            </div>
+          </div>
         ) : (
           <Card className="border-border/40">
             <CardHeader className="pb-3">

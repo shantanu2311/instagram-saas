@@ -224,6 +224,50 @@ export function analyzeProfile(profile: IGBusinessProfile): CompetitorAnalysis {
 }
 
 /**
+ * Fetch the authenticated user's own recent media.
+ * Uses the User Media edge: GET /{ig-user-id}/media?fields=...
+ *
+ * @param credentials - Access token + IG user ID (from OAuth or env)
+ * @param limit - Max posts to fetch (default 25)
+ */
+export async function fetchOwnMedia(
+  credentials: { accessToken: string; igUserId: string },
+  limit: number = 25
+): Promise<
+  Array<{
+    id: string;
+    caption?: string;
+    timestamp: string;
+    media_type: string;
+    like_count?: number;
+    comments_count?: number;
+    permalink?: string;
+    media_url?: string;
+  }>
+> {
+  const fields =
+    "id,caption,timestamp,media_type,like_count,comments_count,permalink,media_url";
+  const url = `https://graph.instagram.com/${credentials.igUserId}/media?fields=${fields}&limit=${limit}&access_token=${credentials.accessToken}`;
+
+  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  if (!res.ok) {
+    throw new Error(`Instagram API error: ${res.status}`);
+  }
+
+  const data = (await res.json()) as { data?: Array<{
+    id: string;
+    caption?: string;
+    timestamp: string;
+    media_type: string;
+    like_count?: number;
+    comments_count?: number;
+    permalink?: string;
+    media_url?: string;
+  }> };
+  return data.data || [];
+}
+
+/**
  * Fetch and analyze multiple competitor profiles.
  * Returns analyzed profiles for those that succeeded, null for failures.
  */

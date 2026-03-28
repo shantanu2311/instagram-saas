@@ -13,6 +13,10 @@ import {
   FileText,
   Clock,
   Send,
+  CalendarHeart,
+  RefreshCw,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { StrategySummaryCard } from "@/components/dashboard/strategy-summary-card";
@@ -20,6 +24,8 @@ import { TodaysContentCard } from "@/components/dashboard/todays-content-card";
 import { WeeklyStrip } from "@/components/dashboard/weekly-strip";
 import { YesterdaysPerformance } from "@/components/dashboard/yesterdays-performance";
 import { QuickActionsBar } from "@/components/dashboard/quick-actions-bar";
+import { WeeklyBriefDialog } from "@/components/dashboard/weekly-brief-dialog";
+import { ExternalPostDialog } from "@/components/dashboard/external-post-dialog";
 import { PageTransition } from "@/components/page-transition";
 
 function getGreeting() {
@@ -37,9 +43,29 @@ function formatDate() {
   });
 }
 
+function getMonday(): string {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d.setDate(diff));
+  monday.setHours(0, 0, 0, 0);
+  return monday.toISOString();
+}
+
+interface SyncExternalPost {
+  id: string;
+  caption: string;
+  timestamp: string;
+  mediaType: string;
+  permalink?: string;
+  likes: number;
+  comments: number;
+}
+
 interface DashboardStats {
   isNewUser: boolean;
   hasBrand: boolean;
+  hasInstagram: boolean;
   postsThisWeek: number;
   totalContent: number;
   drafts: number;
@@ -94,6 +120,16 @@ export default function DashboardPage() {
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [weeklyBrief, setWeeklyBrief] = useState<any>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResults, setSyncResults] = useState<{
+    total: number;
+    synced: number;
+    externalPosts: SyncExternalPost[];
+  } | null>(null);
+  const [importingId, setImportingId] = useState<string | null>(null);
+
+  const monday = getMonday();
 
   const fetchStats = useCallback(() => {
     fetch("/api/dashboard/stats")
@@ -103,9 +139,65 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const fetchBrief = useCallback(() => {
+    fetch(`/api/briefs?weekStart=${encodeURIComponent(monday)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setWeeklyBrief)
+      .catch(() => {});
+  }, [monday]);
+
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+    fetchBrief();
+  }, [fetchStats, fetchBrief]);
+
+  async function handleSync() {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/instagram/sync", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        setSyncResults(data);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function handleImportPost(post: SyncExternalPost) {
+    setImportingId(post.id);
+    try {
+      const res = await fetch("/api/instagram/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          igMediaId: post.id,
+          caption: post.caption,
+          mediaType: post.mediaType.toLowerCase(),
+          timestamp: post.timestamp,
+        }),
+      });
+      if (res.ok) {
+        // Remove from list
+        setSyncResults((prev) =>
+          prev
+            ? {
+                ...prev,
+                synced: prev.synced + 1,
+                externalPosts: prev.externalPosts.filter((p) => p.id !== post.id),
+              }
+            : null
+        );
+        fetchStats();
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setImportingId(null);
+    }
+  }
 
   const isNewUser = stats?.isNewUser ?? true;
 
@@ -217,6 +309,22 @@ export default function DashboardPage() {
             {/* 1. Today's Content Card (hero) */}
             <TodaysContentCard slot={stats?.todaySlot ?? null} onSlotUpdated={fetchStats} />
 
+            {/* Weekly Brief prompt */}
+            {!weeklyBrief && stats?.hasBrand && (
+              <Card className="border-border/40 border-dashed">
+                <CardContent className="py-4 flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-xl bg-ig-pink/10 flex items-center justify-center">
+                    <CalendarHeart className="h-5 w-5 text-ig-pink" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Weekly Brief</p>
+                    <p className="text-xs text-muted-foreground">Tell the AI about this week&apos;s launches, events, or trends</p>
+                  </div>
+                  <WeeklyBriefDialog brandId="" weekStart={monday} onSave={fetchBrief} />
+                </CardContent>
+              </Card>
+            )}
+
             {/* 2. Weekly Strip */}
             {stats?.weekSlots && stats.weekSlots.length > 0 && (
               <WeeklyStrip slots={stats.weekSlots} />
@@ -244,6 +352,110 @@ export default function DashboardPage() {
                 </Card>
               ))}
             </div>
+
+            {/* 3b. Instagram Sync (only when IG connected) */}
+            {stats?.hasInstagram && (
+              <Card className="border-border/40">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">Instagram Sync</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <ExternalPostDialog onLogged={fetchStats} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleSync}
+                        disabled={syncing}
+                        className="gap-2"
+                      >
+                        {syncing ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        )}
+                        {syncing ? "Syncing..." : "Sync Instagram"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {syncResults ? (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        Found {syncResults.total} posts on Instagram
+                        {syncResults.synced > 0 &&
+                          ` (${syncResults.synced} already tracked)`}
+                        {syncResults.externalPosts.length > 0 &&
+                          ` — ${syncResults.externalPosts.length} external`}
+                      </p>
+
+                      {syncResults.externalPosts.length > 0 && (
+                        <div className="space-y-2">
+                          {syncResults.externalPosts.map((post) => (
+                            <div
+                              key={post.id}
+                              className="flex items-start justify-between gap-3 py-2 border-b border-border/30 last:border-0"
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-[10px] uppercase font-medium text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5">
+                                    {post.mediaType}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {new Date(post.timestamp).toLocaleDateString()}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {post.likes} likes &middot; {post.comments} comments
+                                  </span>
+                                </div>
+                                <p className="text-sm truncate">
+                                  {post.caption || "No caption"}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {post.permalink && (
+                                  <a
+                                    href={post.permalink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-muted-foreground hover:text-foreground"
+                                  >
+                                    <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleImportPost(post)}
+                                  disabled={importingId === post.id}
+                                  className="text-xs h-7"
+                                >
+                                  {importingId === post.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    "Log Post"
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {syncResults.externalPosts.length === 0 && (
+                        <p className="text-xs text-emerald-500">
+                          All Instagram posts are tracked!
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Click &ldquo;Sync Instagram&rdquo; to check for posts made outside the app, or log one manually.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* 4. Yesterday's Performance */}
             <YesterdaysPerformance post={stats?.yesterdayPost ?? null} />
