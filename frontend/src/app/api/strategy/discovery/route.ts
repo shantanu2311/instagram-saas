@@ -12,7 +12,6 @@ export async function POST(request: Request) {
     });
 
     if (!res.ok) {
-      // Log the actual error server-side but don't leak to client
       const error = await res.text();
       console.error("Discovery backend error:", res.status, error);
       return NextResponse.json(
@@ -24,14 +23,6 @@ export async function POST(request: Request) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    if (process.env.NODE_ENV === "development") {
-      return NextResponse.json({
-        status: "saved",
-        mock: true,
-        profileId: "mock-profile-1",
-        message: "Discovery profile saved (mock)",
-      });
-    }
     return NextResponse.json(
       { error: "Strategy service unavailable. Please try again later." },
       { status: 503 }
@@ -46,12 +37,6 @@ export async function GET() {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    if (process.env.NODE_ENV === "development") {
-      return NextResponse.json({
-        mock: true,
-        profiles: [],
-      });
-    }
     return NextResponse.json(
       { error: "Strategy service unavailable. Please try again later." },
       { status: 503 }

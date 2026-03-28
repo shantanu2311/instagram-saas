@@ -13,8 +13,9 @@ export async function PUT(request: Request) {
 
     if (!res.ok) {
       const error = await res.text();
+      console.error("Approve backend error:", res.status, error);
       return NextResponse.json(
-        { error: `Backend error: ${error}` },
+        { error: "Failed to approve strategy. Please try again." },
         { status: res.status }
       );
     }
@@ -22,13 +23,6 @@ export async function PUT(request: Request) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    if (process.env.NODE_ENV === "development") {
-      return NextResponse.json({
-        status: "approved",
-        mock: true,
-        message: "Strategy approved (mock)",
-      });
-    }
     return NextResponse.json(
       { error: "Strategy service unavailable. Please try again later." },
       { status: 503 }

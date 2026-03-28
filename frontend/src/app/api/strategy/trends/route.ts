@@ -13,8 +13,9 @@ export async function POST(request: Request) {
 
     if (!res.ok) {
       const error = await res.text();
+      console.error("Trends backend error:", res.status, error);
       return NextResponse.json(
-        { error: `Backend error: ${error}` },
+        { error: "Failed to fetch trends. Please try again." },
         { status: res.status }
       );
     }
@@ -22,31 +23,6 @@ export async function POST(request: Request) {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    if (process.env.NODE_ENV === "development") {
-      return NextResponse.json({
-        mock: true,
-        trends: {
-          hashtags: [
-            "#growthmindset",
-            "#entrepreneurlife",
-            "#contentstrategy",
-            "#reelstrending",
-            "#businesstips",
-          ],
-          formats: [
-            { name: "Talking head reels", growth: "+45%" },
-            { name: "Carousel tips", growth: "+32%" },
-            { name: "BTS content", growth: "+28%" },
-          ],
-          insights: [
-            "Carousel posts are getting 3x more saves this month",
-            "Behind-the-scenes content is trending in your niche",
-            "Short-form video under 30s has highest completion rate",
-          ],
-        },
-        refreshedAt: new Date().toISOString(),
-      });
-    }
     return NextResponse.json(
       { error: "Trends service unavailable. Please try again later." },
       { status: 503 }
@@ -61,26 +37,6 @@ export async function GET() {
     const data = await res.json();
     return NextResponse.json(data);
   } catch {
-    if (process.env.NODE_ENV === "development") {
-      return NextResponse.json({
-        mock: true,
-        trends: {
-          hashtags: [
-            "#growthmindset",
-            "#entrepreneurlife",
-            "#contentstrategy",
-          ],
-          formats: [
-            { name: "Talking head reels", growth: "+45%" },
-            { name: "Carousel tips", growth: "+32%" },
-          ],
-          insights: [
-            "Carousel posts are getting 3x more saves this month",
-          ],
-        },
-        refreshedAt: new Date().toISOString(),
-      });
-    }
     return NextResponse.json(
       { error: "Trends service unavailable. Please try again later." },
       { status: 503 }
