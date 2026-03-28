@@ -166,6 +166,8 @@ interface StrategyState {
   setResearchResults: (results: ResearchResults | null) => void;
   setStrategy: (strategy: ContentStrategy | null) => void;
   setCalendar: (calendar: ContentCalendar | null) => void;
+  /** Persist current calendar slots to the database */
+  persistCalendar: (brandId: string) => Promise<boolean>;
   reset: () => void;
 }
 
@@ -196,7 +198,7 @@ const defaultProfile: BusinessProfile = {
 
 export const useStrategyStore = create<StrategyState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       discoveryStep: 0,
       profile: { ...defaultProfile },
       researchStatus: "idle",
@@ -217,6 +219,21 @@ export const useStrategyStore = create<StrategyState>()(
       setResearchResults: (results) => set({ researchResults: results }),
       setStrategy: (strategy) => set({ strategy }),
       setCalendar: (calendar) => set({ calendar }),
+      persistCalendar: async (brandId: string) => {
+        const { calendar } = get();
+        if (!calendar?.slots?.length) return false;
+        try {
+          const res = await fetch("/api/calendar/persist", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ brandId, slots: calendar.slots }),
+          });
+          return res.ok;
+        } catch {
+          console.error("Failed to persist calendar to DB");
+          return false;
+        }
+      },
       reset: () =>
         set({
           discoveryStep: 0,

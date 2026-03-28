@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { generateResearch } from "@/lib/content-engine/research-generator";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = rateLimit(request, "generate");
+  if (limited) return limited;
   try {
     let body: Record<string, unknown>;
     try {

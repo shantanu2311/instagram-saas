@@ -1,7 +1,46 @@
 import { NextResponse } from "next/server";
 import { callClaude } from "@/lib/content-engine";
+import { rateLimit } from "@/lib/rate-limit";
+
+/**
+ * Check if a hostname resolves to a private/internal IP range.
+ * Blocks SSRF attempts targeting internal services.
+ */
+function isBlockedHost(hostname: string): boolean {
+  const lower = hostname.toLowerCase();
+
+  // Block common internal hostnames
+  if (
+    lower === "localhost" ||
+    lower === "host.docker.internal" ||
+    lower.endsWith(".local") ||
+    lower.endsWith(".internal")
+  ) {
+    return true;
+  }
+
+  // Block IP addresses in private/reserved ranges
+  // Strip IPv6 brackets if present
+  const ip = lower.replace(/^\[|\]$/g, "");
+
+  // IPv4 private ranges
+  if (/^127\./.test(ip)) return true; // loopback
+  if (/^10\./.test(ip)) return true; // 10.0.0.0/8
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return true; // 172.16.0.0/12
+  if (/^192\.168\./.test(ip)) return true; // 192.168.0.0/16
+  if (/^169\.254\./.test(ip)) return true; // link-local
+  if (ip === "0.0.0.0" || ip === "::1" || ip === "::") return true;
+
+  // Block metadata endpoints (cloud providers)
+  if (/^100\.(6[4-9]|[7-9]\d|1[0-1]\d|12[0-7])\./.test(ip)) return true; // 100.64.0.0/10
+
+  return false;
+}
 
 export async function POST(request: Request) {
+  const limited = rateLimit(request, "default");
+  if (limited) return limited;
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let body: any;
@@ -24,6 +63,38 @@ export async function POST(request: Request) {
     let normalizedUrl = url.trim();
     if (!normalizedUrl.startsWith("http")) {
       normalizedUrl = "https://" + normalizedUrl;
+    }
+
+    // SSRF protection: validate URL scheme and hostname
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(normalizedUrl);
+    } catch {
+      return NextResponse.json({ error: "Invalid URL format" }, { status: 400 });
+    }
+
+    // Only allow http and https schemes
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return NextResponse.json(
+        { error: "Only HTTP and HTTPS URLs are allowed" },
+        { status: 400 }
+      );
+    }
+
+    // Block internal/private hostnames and IPs
+    if (isBlockedHost(parsedUrl.hostname)) {
+      return NextResponse.json(
+        { error: "Cannot scrape internal or private URLs" },
+        { status: 400 }
+      );
+    }
+
+    // Block URLs with credentials
+    if (parsedUrl.username || parsedUrl.password) {
+      return NextResponse.json(
+        { error: "URLs with credentials are not allowed" },
+        { status: 400 }
+      );
     }
 
     // Fetch the website

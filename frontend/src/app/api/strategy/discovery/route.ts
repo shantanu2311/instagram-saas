@@ -12,9 +12,11 @@ export async function POST(request: Request) {
     });
 
     if (!res.ok) {
+      // Log the actual error server-side but don't leak to client
       const error = await res.text();
+      console.error("Discovery backend error:", res.status, error);
       return NextResponse.json(
-        { error: `Backend error: ${error}` },
+        { error: "Failed to save discovery profile. Please try again." },
         { status: res.status }
       );
     }

@@ -11,8 +11,12 @@ import {
   mediaUrl,
 } from "@/lib/backend-client";
 import { auth } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = rateLimit(request, "generate");
+  if (limited) return limited;
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,8 +41,11 @@ export async function POST(request: Request) {
       );
     }
 
-    // Sanitize topic: strip HTML tags and truncate
-    body.topic = body.topic.replace(/<[^>]*>/g, "").slice(0, 500);
+    // Sanitize topic: strip null bytes, HTML tags, and truncate
+    body.topic = body.topic
+      .replace(/\0/g, "")
+      .replace(/<[^>]*>/g, "")
+      .slice(0, 500);
 
     // Build brand context from request
     const brand: BrandContext = {

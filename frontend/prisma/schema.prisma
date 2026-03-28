@@ -18,11 +18,12 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts     Account[]
-  sessions     Session[]
-  igAccounts   InstagramAccount[]
-  brands       Brand[]
-  subscription Subscription?
+  accounts      Account[]
+  sessions      Session[]
+  igAccounts    InstagramAccount[]
+  brands        Brand[]
+  subscription  Subscription?
+  calendarSlots CalendarSlot[]
 }
 
 model Account {
@@ -134,10 +135,11 @@ model Brand {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  igAccount InstagramAccount? @relation(fields: [igAccountId], references: [id], onDelete: SetNull)
-  templates Template[]
-  posts     GeneratedContent[]
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  igAccount     InstagramAccount? @relation(fields: [igAccountId], references: [id], onDelete: SetNull)
+  templates     Template[]
+  posts         GeneratedContent[]
+  calendarSlots CalendarSlot[]
 
   @@index([userId])
 }
@@ -180,9 +182,10 @@ model GeneratedContent {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
-  brand     Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
-  igAccount InstagramAccount? @relation(fields: [igAccountId], references: [id], onDelete: SetNull)
-  analytics PostAnalytics?
+  brand        Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  igAccount    InstagramAccount? @relation(fields: [igAccountId], references: [id], onDelete: SetNull)
+  analytics    PostAnalytics?
+  calendarSlot CalendarSlot?
 
   @@index([brandId])
   @@index([igAccountId])
@@ -221,4 +224,33 @@ model AccountSnapshot {
 
   @@index([igAccountId])
   @@index([snapshotDate])
+}
+
+// ─── Calendar ─────────────────────────────────────────────────
+
+model CalendarSlot {
+  id            String    @id @default(cuid())
+  userId        String
+  brandId       String
+  date          DateTime
+  dayOfWeek     String
+  pillar        String
+  contentType   String
+  topic         String
+  headline      String    @default("")
+  suggestedTime String    @default("")
+  isTrendBased  Boolean   @default(false)
+  status        String    @default("pending") // pending, created, uploaded, skipped, missed
+  contentId     String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  brand   Brand             @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  content GeneratedContent? @relation(fields: [contentId], references: [id], onDelete: SetNull)
+
+  @@unique([brandId, date])
+  @@index([userId, date])
+  @@index([brandId])
+  @@index([status])
 }

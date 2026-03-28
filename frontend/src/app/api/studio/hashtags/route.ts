@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { researchHashtags } from "@/lib/content-engine/hashtag-generator";
 import type { BrandContext, StrategyContext } from "@/lib/content-engine";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = rateLimit(request, "generate");
+  if (limited) return limited;
   try {
     let body: Record<string, unknown>;
     try {

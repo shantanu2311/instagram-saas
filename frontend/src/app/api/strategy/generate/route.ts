@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { generateStrategy } from "@/lib/content-engine";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = rateLimit(request, "generate");
+  if (limited) return limited;
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let body: any;

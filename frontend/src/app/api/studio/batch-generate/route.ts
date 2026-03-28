@@ -11,6 +11,7 @@ import {
   mediaUrl,
 } from "@/lib/backend-client";
 import { auth } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 interface CalendarSlot {
   date: string;
@@ -36,6 +37,9 @@ interface BatchRequest {
  * This allows the frontend to update the queue progressively.
  */
 export async function POST(request: Request) {
+  const limited = rateLimit(request, "generate");
+  if (limited) return limited;
+
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

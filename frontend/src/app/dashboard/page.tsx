@@ -7,20 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Wand2,
-  Calendar,
-  BarChart3,
-  TrendingUp,
-  Eye,
-  Heart,
-  Image as ImageIcon,
   ArrowRight,
   Sparkles,
+  Image as ImageIcon,
   FileText,
   Clock,
   Send,
 } from "lucide-react";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { StrategySummaryCard } from "@/components/dashboard/strategy-summary-card";
+import { TodaysContentCard } from "@/components/dashboard/todays-content-card";
+import { WeeklyStrip } from "@/components/dashboard/weekly-strip";
+import { YesterdaysPerformance } from "@/components/dashboard/yesterdays-performance";
+import { QuickActionsBar } from "@/components/dashboard/quick-actions-bar";
 import { PageTransition } from "@/components/page-transition";
 
 function getGreeting() {
@@ -54,6 +53,39 @@ interface DashboardStats {
     qualityScore: number | null;
     createdAt: string;
   }>;
+  // Daily Cockpit
+  todaySlot: {
+    id: string;
+    date: string;
+    pillar: string;
+    contentType: string;
+    topic: string;
+    headline: string;
+    suggestedTime: string;
+    status: string;
+  } | null;
+  weekSlots: Array<{
+    id: string;
+    date: string;
+    pillar: string;
+    contentType: string;
+    topic: string;
+    status: string;
+  }>;
+  yesterdayPost: {
+    id: string;
+    contentType: string;
+    caption: string | null;
+    thumbnailUrl: string | null;
+    qualityScore: number | null;
+    analytics: {
+      likes: number;
+      comments: number;
+      saves: number;
+      shares: number;
+      engagement: number;
+    } | null;
+  } | null;
 }
 
 export default function DashboardPage() {
@@ -61,12 +93,14 @@ export default function DashboardPage() {
   const userName = session?.user?.name || "Creator";
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/dashboard/stats")
       .then((r) => (r.ok ? r.json() : null))
       .then(setStats)
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const isNewUser = stats?.isNewUser ?? true;
@@ -74,7 +108,7 @@ export default function DashboardPage() {
   const kpis = [
     { label: "Posts This Week", value: stats ? `${stats.postsThisWeek} / 7` : "—", icon: ImageIcon, color: "text-ig-pink" },
     { label: "Drafts", value: stats ? String(stats.drafts) : "—", icon: FileText, color: "text-blue-500" },
-    { label: "In Queue", value: stats ? String(stats.queued) : "��", icon: Clock, color: "text-ig-orange" },
+    { label: "In Queue", value: stats ? String(stats.queued) : "—", icon: Clock, color: "text-ig-orange" },
     { label: "Published", value: stats ? String(stats.published) : "—", icon: Send, color: "text-emerald-500" },
   ];
 
@@ -97,7 +131,21 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {isNewUser ? (
+        {loading ? (
+          <div className="space-y-4 animate-pulse">
+            <div className="h-32 rounded-xl bg-muted/50" />
+            <div className="grid grid-cols-7 gap-1.5">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="h-24 rounded-xl bg-muted/30" />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-20 rounded-xl bg-muted/30" />
+              ))}
+            </div>
+          </div>
+        ) : isNewUser ? (
           <>
             {/* Welcome hero for new users */}
             <Card className="border-border/40 bg-gradient-to-br from-ig-pink/5 via-ig-orange/5 to-transparent">
@@ -160,7 +208,17 @@ export default function DashboardPage() {
           </>
         ) : (
           <>
-            {/* KPIs for active users */}
+            {/* ─── Daily Creative Cockpit ─────────────────────────── */}
+
+            {/* 1. Today's Content Card (hero) */}
+            <TodaysContentCard slot={stats?.todaySlot ?? null} />
+
+            {/* 2. Weekly Strip */}
+            {stats?.weekSlots && stats.weekSlots.length > 0 && (
+              <WeeklyStrip slots={stats.weekSlots} />
+            )}
+
+            {/* 3. KPI cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {kpis.map((kpi) => (
                 <Card key={kpi.label} className="border-border/40">
@@ -183,12 +241,19 @@ export default function DashboardPage() {
               ))}
             </div>
 
+            {/* 4. Yesterday's Performance */}
+            <YesterdaysPerformance post={stats?.yesterdayPost ?? null} />
+
+            {/* 5. Quick Actions */}
+            <QuickActionsBar />
+
+            {/* 6. Strategy + Onboarding (for users still completing setup) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <StrategySummaryCard />
               <OnboardingChecklist />
             </div>
 
-            {/* Recent Content */}
+            {/* 7. Recent Content */}
             {stats?.recentContent && stats.recentContent.length > 0 && (
               <Card className="border-border/40">
                 <CardHeader className="pb-2">
@@ -237,58 +302,6 @@ export default function DashboardPage() {
             )}
           </>
         )}
-
-        {/* Quick actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link href="/studio">
-            <Card className="border-border/40 hover:border-ig-pink/30 transition-colors cursor-pointer h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Wand2 className="h-4 w-4 text-ig-pink" />
-                  Content Studio
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  Generate images, reels, and captions with AI. Choose Standard
-                  or AI-Enhanced generation.
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/dashboard/calendar">
-            <Card className="border-border/40 hover:border-ig-pink/30 transition-colors cursor-pointer h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-blue-500" />
-                  Content Calendar
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  View and manage your posting schedule. Drag and drop to
-                  reschedule.
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/dashboard/analytics">
-            <Card className="border-border/40 hover:border-ig-pink/30 transition-colors cursor-pointer h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-emerald-500" />
-                  Analytics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  Track performance across posts, pillars, and time. Get
-                  AI-powered recommendations.
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
       </div>
     </PageTransition>
   );

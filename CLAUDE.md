@@ -106,6 +106,10 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `POST /api/strategy/scrape-website` — Website scraper for business info extraction
 - `POST /api/posts/publish` — Instagram posting (proxies to Python backend)
 - `GET /api/instagram/status` — Instagram connection status + profile info
+- `POST /api/calendar/persist` — Bulk upsert calendar slots to DB (auth required, brand ownership check, rate limited)
+- `GET /api/calendar/slots?from=&to=` — Query calendar slots by date range (auth required, rate limited, max 90-day range, requires at least one date bound)
+- `GET /api/calendar/slots/[id]` — Get single slot with linked content (auth required, rate limited)
+- `PATCH /api/calendar/slots/[id]` — Update slot status/contentId (auth required, ownership check, contentId ownership verification, rate limited)
 
 ## Data Persistence (Prisma → PostgreSQL)
 
@@ -114,6 +118,7 @@ All routes now use real Prisma queries instead of stubs:
 - **Brands**: `POST /api/brands` upserts brand config from onboarding; `GET /api/brands` returns user's brands
 - **Studio Save**: `POST /api/studio/save` creates/updates `GeneratedContent`; `GET /api/studio/drafts` returns drafts
 - **Dashboard**: `GET /api/dashboard/stats` returns real KPIs (content counts, recent items)
+- **Calendar**: `POST /api/calendar/persist` upserts slots (unique on brandId+date); `GET /api/calendar/slots` queries by date range (bounded, max 90 days); auto-persists on calendar generation if authenticated + brandId verified as owned
 - **Queue Status**: `POST /api/queue/status` syncs approve/reject/publish status to DB
 - **Image Gen**: `POST /api/studio/generate` calls backend Pillow generator, proxied via `/api/media/proxy`
 - **Prisma v7**: Requires `@prisma/adapter-pg` with `pg.Pool` — see `src/lib/db.ts`
@@ -123,6 +128,26 @@ All routes now use real Prisma queries instead of stubs:
 - `onboarding-store.ts` — Brand config (niche, colors, fonts, voice, pillars) + automation level + step counter
 - `strategy-store.ts` — Discovery profile (9 steps) + research status/results + strategy + calendar + step counter
 - `queue-store.ts` — Content queue items + batch progress
+
+## Daily Creative Cockpit (Sprint 0-1)
+
+Dashboard transforms from a one-time strategy tool into a daily habit-forming creative control room. Flow: CHECK → CREATE → APPROVE → LEARN.
+
+**New Components** (`src/components/dashboard/`):
+- `todays-content-card.tsx` — Hero card for today's calendar slot, CTAs to create or mark done
+- `weekly-strip.tsx` — Mon-Sun strip with pillar dots, status icons, clickable to studio
+- `yesterdays-performance.tsx` — Thumbnail + engagement metrics + trend indicator
+- `quick-actions-bar.tsx` — Pill-style shortcuts to common actions
+
+**Calendar Persistence** (CalendarSlot model):
+- Unique on `[brandId, date]` — supports multiple brands per user
+- Status lifecycle: `pending → created → uploaded → skipped/missed`
+- Auto-persists when calendar is generated with verified brand ownership
+- Calendar slots GET endpoint requires date bounds (max 90 days) to prevent unbounded queries
+- Weekly strip uses `YYYY-MM-DD` format with UTC for server dates, local for client dates
+
+**Dashboard Loading**:
+- Shows animated skeleton while stats load to prevent flash from new-user → active-user state
 
 ## Key Patterns & Gotchas
 
@@ -192,13 +217,20 @@ Two-tier data source for competitor analysis:
 |----------|-------|----------|--------|
 | ~~Critical~~ | ~~No auth middleware~~ | `src/proxy.ts` | **FIXED** — proxy.ts protects pages + API routes |
 | ~~Critical~~ | ~~Auth accepts any credentials (stub)~~ | `src/lib/auth.ts` | **FIXED** — Prisma + bcrypt real auth |
-| High | SSRF in scrape-website — can fetch internal URLs | `src/app/api/strategy/scrape-website/route.ts` | Open |
-| High | No security headers (X-Frame-Options, CSP, HSTS) | `next.config.ts` | Open |
-| High | No rate limiting on API routes | Need Vercel edge config | Open |
-| Medium | Null bytes in topic crash generation + leak system prompt | `src/app/api/studio/generate/route.ts` | Open |
+| ~~High~~ | ~~SSRF in scrape-website — can fetch internal URLs~~ | `src/app/api/strategy/scrape-website/route.ts` | **FIXED** — blocks private IPs, internal hostnames, non-HTTP schemes, credentials in URLs |
+| ~~High~~ | ~~No security headers (X-Frame-Options, CSP, HSTS)~~ | `next.config.ts` | **FIXED** — CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy |
+| ~~High~~ | ~~No rate limiting on API routes~~ | `src/lib/rate-limit.ts` | **FIXED** — sliding-window rate limiter on all AI generation (10/min), auth (5/min), and scrape routes |
+| ~~Medium~~ | ~~Null bytes in topic crash generation + leak system prompt~~ | `src/app/api/studio/generate/route.ts` | **FIXED** — strips null bytes before sanitization |
 | ~~Medium~~ | ~~Register API echoes unsanitized input~~ | `src/app/api/auth/register/route.ts` | **FIXED** — returns only `{ id, name, email }` |
-| Medium | Error message leakage in discovery route | `src/app/api/strategy/discovery/route.ts` | Open |
+| ~~Medium~~ | ~~Error message leakage in discovery route~~ | `src/app/api/strategy/discovery/route.ts` | **FIXED** — logs server-side, returns generic message to client |
 | ~~Low~~ | ~~`/api/studio/save` accepts empty body~~ | `src/app/api/studio/save/route.ts` | **FIXED** — validates body, requires brand |
+| ~~Critical~~ | ~~CalendarSlot unique on userId+date (blocks multi-brand)~~ | `prisma/schema.prisma` | **FIXED** — unique on `[brandId, date]` |
+| ~~Critical~~ | ~~No contentId ownership check on PATCH slots~~ | `api/calendar/slots/[id]/route.ts` | **FIXED** — verifies content belongs to user before linking |
+| ~~Critical~~ | ~~Brand ownership not verified in calendar auto-persist~~ | `api/strategy/calendar/route.ts` | **FIXED** — checks brand.userId before persisting |
+| ~~Critical~~ | ~~Dashboard flashes new-user state while loading~~ | `dashboard/page.tsx` | **FIXED** — loading skeleton shown until stats arrive |
+| ~~High~~ | ~~No rate limiting on calendar GET/PATCH endpoints~~ | `api/calendar/slots/` | **FIXED** — rate limited (default tier) |
+| ~~High~~ | ~~Unbounded query on calendar slots GET~~ | `api/calendar/slots/route.ts` | **FIXED** — requires date bounds, max 90-day range, 500 row cap |
+| ~~High~~ | ~~Weekly strip date key format mismatch~~ | `weekly-strip.tsx` | **FIXED** — consistent YYYY-MM-DD format, UTC for server dates |
 | Low | Script tag warnings from framework | Next.js internals | Won't fix |
 
 ## Creator Techniques Integration (from claude-instagram-techniques.docx)

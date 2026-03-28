@@ -64,6 +64,86 @@ export async function GET() {
       })
     : [];
 
+  // ─── Daily Cockpit Data ────────────────────────────────────────
+
+  // Today's calendar slot
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const todaySlot = await prisma.calendarSlot.findFirst({
+    where: {
+      userId,
+      date: { gte: todayStart, lte: todayEnd },
+    },
+    include: {
+      content: {
+        select: {
+          id: true,
+          status: true,
+          caption: true,
+          thumbnailUrl: true,
+          qualityScore: true,
+        },
+      },
+    },
+  });
+
+  // This week's calendar slots (Sun-Sat)
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  endOfWeek.setHours(23, 59, 59, 999);
+
+  const weekSlots = await prisma.calendarSlot.findMany({
+    where: {
+      userId,
+      date: { gte: startOfWeek, lte: endOfWeek },
+    },
+    orderBy: { date: "asc" },
+    select: {
+      id: true,
+      date: true,
+      pillar: true,
+      contentType: true,
+      topic: true,
+      status: true,
+    },
+  });
+
+  // Yesterday's published post (with analytics if available)
+  const yesterdayStart = new Date(todayStart);
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+  const yesterdayEnd = new Date(yesterdayStart);
+  yesterdayEnd.setHours(23, 59, 59, 999);
+
+  let yesterdayPost = null;
+  if (brand) {
+    yesterdayPost = await prisma.generatedContent.findFirst({
+      where: {
+        brandId: brand.id,
+        status: "published",
+        postedAt: { gte: yesterdayStart, lte: yesterdayEnd },
+      },
+      select: {
+        id: true,
+        contentType: true,
+        caption: true,
+        thumbnailUrl: true,
+        qualityScore: true,
+        analytics: {
+          select: {
+            likes: true,
+            comments: true,
+            saves: true,
+            shares: true,
+            engagement: true,
+          },
+        },
+      },
+    });
+  }
+
   return NextResponse.json({
     isNewUser: totalContent === 0 && !brand,
     hasBrand: !!brand,
@@ -73,5 +153,9 @@ export async function GET() {
     queued,
     published,
     recentContent,
+    // Daily Cockpit
+    todaySlot,
+    weekSlots,
+    yesterdayPost,
   });
 }
