@@ -110,7 +110,12 @@ export async function generateCaption(
     throw new Error("Failed to parse caption response from Claude");
   }
 
-  const parsed = JSON.parse(jsonMatch[0]);
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch {
+    throw new Error("Failed to parse JSON from AI response");
+  }
   const scores = parsed.quality_scores || {};
 
   const hookStrength = scores.hook_strength || 8;
