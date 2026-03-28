@@ -59,11 +59,11 @@ export function WeeklyStrip({ slots }: { slots: WeekSlot[] }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Build lookup by date string (YYYY-MM-DD) using UTC to match server dates
+  // Build lookup by local date string (YYYY-MM-DD)
   const slotMap = new Map<string, WeekSlot>();
   for (const slot of slots) {
     const d = new Date(slot.date);
-    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     slotMap.set(key, slot);
   }
 

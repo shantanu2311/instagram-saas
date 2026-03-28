@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 import { callClaude } from "@/lib/content-engine";
+import { auth } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = rateLimit(request, "generate");
+  if (limited) return limited;
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let body: any;

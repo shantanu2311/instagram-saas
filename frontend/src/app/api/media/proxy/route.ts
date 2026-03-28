@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
 export async function GET(request: NextRequest) {
+  const limited = rateLimit(request, "default");
+  if (limited) return limited;
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const filename = request.nextUrl.searchParams.get("file");
 
   if (!filename) {

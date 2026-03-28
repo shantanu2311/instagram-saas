@@ -59,6 +59,7 @@ export default function ReviewPage() {
   const { brand: savedBrand } = useOnboardingStore();
   const [sections, setSections] = useState<Record<string, SectionStatus>>({});
   const [approving, setApproving] = useState(false);
+  const [calendarError, setCalendarError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!strategy) {
@@ -259,9 +260,11 @@ export default function ReviewPage() {
 
         return; // Already navigated
       }
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Calendar generation failed. Please try again.";
+      setCalendarError(msg);
       setApproving(false);
-      return; // Stay on page — calendar generation failed
+      return;
     }
     setApproving(false);
     router.push("/strategy/calendar");
@@ -675,10 +678,18 @@ export default function ReviewPage() {
         </CardContent>
       </Card>
 
+      {/* Calendar generation error */}
+      {calendarError && (
+        <div className="mx-auto max-w-lg rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
+          <p className="text-sm text-red-500 font-medium">Calendar generation failed</p>
+          <p className="text-xs text-muted-foreground mt-1">{calendarError}</p>
+        </div>
+      )}
+
       {/* Approve & Generate */}
       <div className="flex justify-center pt-4 pb-8">
         <Button
-          onClick={handleGenerateCalendar}
+          onClick={() => { setCalendarError(null); handleGenerateCalendar(); }}
           disabled={!allApproved || approving}
           size="lg"
           className="px-8 gap-2"
@@ -691,7 +702,7 @@ export default function ReviewPage() {
           ) : (
             <>
               <Sparkles className="h-4 w-4" />
-              Approve All &amp; Generate Calendar
+              {calendarError ? "Retry Calendar Generation" : "Approve All & Generate Calendar"}
             </>
           )}
         </Button>

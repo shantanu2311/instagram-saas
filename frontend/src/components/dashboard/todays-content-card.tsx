@@ -11,6 +11,8 @@ import {
   LayoutGrid,
   Clock,
   CheckCircle2,
+  SkipForward,
+  AlertCircle,
 } from "lucide-react";
 import { MarkDoneDialog } from "@/components/dashboard/mark-done-dialog";
 
@@ -43,6 +45,8 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
   pending: { label: "Not started", color: "text-muted-foreground", icon: Clock },
   created: { label: "Content ready", color: "text-emerald-500", icon: CheckCircle2 },
   uploaded: { label: "Uploaded", color: "text-emerald-500", icon: CheckCircle2 },
+  skipped: { label: "Skipped", color: "text-amber-500", icon: SkipForward },
+  missed: { label: "Missed", color: "text-red-400", icon: AlertCircle },
 };
 
 export function TodaysContentCard({ slot, onSlotUpdated }: { slot: CalendarSlotData | null; onSlotUpdated?: () => void }) {
@@ -87,7 +91,7 @@ export function TodaysContentCard({ slot, onSlotUpdated }: { slot: CalendarSlotD
     ...(slot.headline ? { headline: slot.headline } : {}),
   });
 
-  const isCompleted = slot.status === "created" || slot.status === "uploaded";
+  const isCompleted = slot.status === "created" || slot.status === "uploaded" || slot.status === "skipped" || slot.status === "missed";
 
   return (
     <Card className="border-border/40 bg-gradient-to-br from-ig-pink/5 via-ig-orange/5 to-transparent overflow-hidden">

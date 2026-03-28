@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
 import { getInstagramCredentials } from "@/lib/instagram-token";
+import { auth } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 /**
  * Returns the current Instagram connection status.
  * Used by the settings page and research page to show data source.
  */
-export async function GET() {
+export async function GET(request: Request) {
+  const limited = rateLimit(request, "default");
+  if (limited) return limited;
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const creds = await getInstagramCredentials();
 
   if (!creds) {

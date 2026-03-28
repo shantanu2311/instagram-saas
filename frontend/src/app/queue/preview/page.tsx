@@ -154,12 +154,14 @@ export default function DesignPreviewPage() {
       const time = slot.suggestedTime || "7:30 AM";
       const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
       let hours = match ? parseInt(match[1]) : 7;
-      const mins = match ? match[2] : "30";
+      const minsNum = match ? parseInt(match[2]) : 30;
       if (match) {
+        if (hours < 1 || hours > 12) hours = 7; // Invalid hour, fallback
         if (match[3].toUpperCase() === "PM" && hours !== 12) hours += 12;
         if (match[3].toUpperCase() === "AM" && hours === 12) hours = 0;
       }
-      const timeStr = `${String(hours).padStart(2, "0")}:${mins}:00`;
+      const validMins = minsNum >= 0 && minsNum <= 59 ? minsNum : 30;
+      const timeStr = `${String(hours).padStart(2, "0")}:${String(validMins).padStart(2, "0")}:00`;
 
       queueStore.addItem({
         id: `q-${slot.date}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
