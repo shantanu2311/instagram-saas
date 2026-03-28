@@ -4,6 +4,13 @@ import {
   type BrandContext,
   type StrategyContext,
 } from "@/lib/content-engine";
+import {
+  generateImage,
+  buildBackendBrand,
+  buildFactCardTemplate,
+  mediaUrl,
+} from "@/lib/backend-client";
+import { auth } from "@/lib/auth";
 
 interface CalendarSlot {
   date: string;
@@ -29,6 +36,11 @@ interface BatchRequest {
  * This allows the frontend to update the queue progressively.
  */
 export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     let body: BatchRequest;
     try {
@@ -62,10 +74,32 @@ export async function POST(request: Request) {
               strategy: strategy || undefined,
             });
 
+            // Try to generate image via backend
+            let image_url: string | null = null;
+            if (slot.contentType !== "reel") {
+              const template = buildFactCardTemplate({
+                headline: result.headline,
+                body: result.caption.slice(0, 200),
+                category: slot.pillar.toUpperCase(),
+              });
+              const backendBrand = buildBackendBrand({
+                primaryColor: brand.primaryColor,
+                secondaryColor: brand.secondaryColor,
+                accentColor: brand.accentColor,
+                brandName: brand.brandName,
+              });
+              const imgResult = await generateImage(template, backendBrand);
+              if (imgResult?.path) {
+                const path = Array.isArray(imgResult.path) ? imgResult.path[0] : imgResult.path;
+                image_url = mediaUrl(path);
+              }
+            }
+
             const item = {
               index: i,
               slotDate: slot.date,
               status: "success" as const,
+              image_url,
               headline: result.headline,
               caption: result.caption,
               hashtags: result.hashtags,

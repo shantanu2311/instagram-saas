@@ -214,10 +214,29 @@ export default function QueuePage() {
   const postedItems = items.filter((i) => i.status === "posted");
   const failedItems = items.filter((i) => i.status === "failed" || i.status === "rejected");
 
+  // Sync status change to backend DB (fire-and-forget)
+  const syncStatus = (id: string, status: string) => {
+    fetch("/api/queue/status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status }),
+    }).catch(() => {}); // Non-blocking
+  };
+
+  const handleApprove = (id: string) => {
+    approveItem(id);
+    syncStatus(id, "approved");
+  };
+
+  const handleReject = (id: string) => {
+    rejectItem(id);
+    syncStatus(id, "rejected");
+  };
+
   const handlePost = async (item: QueueItem) => {
     setPosting(item.id);
     try {
-      await fetch("/api/posts/publish", {
+      const res = await fetch("/api/posts/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -225,12 +244,22 @@ export default function QueuePage() {
           hashtags: item.hashtags,
         }),
       });
+      const data = res.ok ? await res.json() : null;
       useQueueStore.getState().updateItem(item.id, { status: "posted" });
+      syncStatus(item.id, "published");
+      if (data?.ig_media_id) {
+        fetch("/api/queue/status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: item.id, status: "published", igMediaId: data.ig_media_id }),
+        }).catch(() => {});
+      }
     } catch {
       useQueueStore.getState().updateItem(item.id, {
         status: "failed",
         error: "Failed to publish. Connect Instagram in Settings.",
       });
+      syncStatus(item.id, "failed");
     }
     setPosting(null);
   };
@@ -332,8 +361,8 @@ export default function QueuePage() {
               <QueueItemCard
                 key={item.id}
                 item={item}
-                onApprove={() => approveItem(item.id)}
-                onReject={() => rejectItem(item.id)}
+                onApprove={() => handleApprove(item.id)}
+                onReject={() => handleReject(item.id)}
                 onPost={() => {}}
                 onReplace={() => handleReplace(item)}
                 expanded={expandedId === item.id}

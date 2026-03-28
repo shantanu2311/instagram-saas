@@ -9,9 +9,9 @@ Multi-user SaaS platform for automated Instagram content creation and posting. G
 - **Frontend**: Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4 + shadcn/ui
 - **Content Engine**: `src/lib/content-engine/` — OpenAI SDK (gpt-4o-mini)
 - **Backend**: Python FastAPI microservice (port 8000) — image gen, Instagram posting, analytics
-- **Database**: PostgreSQL 16 (shared, Next.js via Prisma, FastAPI via SQLAlchemy)
+- **Database**: PostgreSQL 16 (shared, Next.js via Prisma v7 + `@prisma/adapter-pg`, FastAPI via SQLAlchemy)
 - **Queue**: Celery + Redis 7 (scheduled posting, analytics collection)
-- **Auth**: NextAuth v5 (credentials + Instagram OAuth) — currently stub, accepts any credentials
+- **Auth**: NextAuth v5 (credentials + Instagram OAuth) — Prisma + bcrypt, proxy.ts route protection
 - **Deployment**: Vercel (auto-deploys from GitHub master)
 
 ## Build & Run
@@ -85,20 +85,38 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `/settings/billing` — Plan info, usage, upgrade
 
 ### API Routes
-- `GET /api/studio/drafts` — Returns saved drafts (stub: returns `[]`)
-- `POST /api/studio/generate` — Single content generation (validates topic required, sanitizes HTML)
-- `POST /api/studio/batch-generate` — Batch generation (NDJSON stream, validates slots)
+- `POST /api/auth/register` — User registration (bcrypt hash, validates email/name/password, sanitizes name)
+- `GET /api/auth/session` — Auth session
+- `GET /api/studio/drafts` — Returns user's drafts from DB (auth required)
+- `POST /api/studio/generate` — Single content generation + Pillow image gen (auth required)
+- `POST /api/studio/batch-generate` — Batch generation NDJSON stream + images (auth required)
 - `POST /api/studio/repurpose` — Repurpose long-form content into 4 IG formats
 - `POST /api/studio/generate-reel` — Reel script generation (timed scenes, faceless mode)
 - `POST /api/studio/hashtags` — Hashtag research (branded/niche/reach/trending sets)
-- `POST /api/studio/save` — Save draft (stub)
+- `POST /api/studio/save` — Save draft to DB with ownership check (auth required)
+- `GET /api/brands` — Returns user's brands from DB (auth required)
+- `POST /api/brands` — Create/update brand config from onboarding (auth required)
+- `GET /api/dashboard/stats` — Real KPIs: content counts, recent items, isNewUser (auth required)
+- `POST /api/queue/status` — Sync queue status changes to DB with ownership check (auth required)
+- `GET /api/media/proxy?file=` — Proxies generated images from Python backend (auth required, path traversal protected)
 - `POST /api/strategy/research` — AI-powered niche research (Graph API + Claude web search)
 - `POST /api/strategy/generate` — Strategy generation (validates discovery data required, uses research results)
-- `POST /api/strategy/deep-dive` — Deep-dive follow-up questions before strategy gen
-- `POST /api/strategy/calendar` — Calendar generation (validates strategy data required)
+- `POST /api/strategy/deep-dive` ��� Deep-dive follow-up questions before strategy gen
+- `POST /api/strategy/calendar` ��� Calendar generation (validates strategy data required)
 - `POST /api/strategy/scrape-website` — Website scraper for business info extraction
-- `POST /api/posts/publish` — Instagram posting
-- `GET /api/auth/session` — Auth session
+- `POST /api/posts/publish` — Instagram posting (proxies to Python backend)
+- `GET /api/instagram/status` — Instagram connection status + profile info
+
+## Data Persistence (Prisma → PostgreSQL)
+
+All routes now use real Prisma queries instead of stubs:
+- **Auth**: `POST /api/auth/register` creates user with bcrypt hash; login queries `User` table
+- **Brands**: `POST /api/brands` upserts brand config from onboarding; `GET /api/brands` returns user's brands
+- **Studio Save**: `POST /api/studio/save` creates/updates `GeneratedContent`; `GET /api/studio/drafts` returns drafts
+- **Dashboard**: `GET /api/dashboard/stats` returns real KPIs (content counts, recent items)
+- **Queue Status**: `POST /api/queue/status` syncs approve/reject/publish status to DB
+- **Image Gen**: `POST /api/studio/generate` calls backend Pillow generator, proxied via `/api/media/proxy`
+- **Prisma v7**: Requires `@prisma/adapter-pg` with `pg.Pool` — see `src/lib/db.ts`
 
 ## Stores (Zustand + sessionStorage)
 
@@ -107,6 +125,10 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `queue-store.ts` — Content queue items + batch progress
 
 ## Key Patterns & Gotchas
+
+### Next.js 16 Proxy (not Middleware)
+- **Next.js 16 uses `src/proxy.ts` instead of `middleware.ts`** — having both causes build failure. Use `proxy()` export.
+- Proxy checks `authjs.session-token` cookie for auth; returns 401 for API, redirects for pages.
 
 ### React 19 + Next.js 16
 - **Framer Motion `AnimatePresence mode="wait"` is BROKEN with React 19** — exit animations never complete, blocking new component mounts. Removed from discovery and onboarding pages. Use plain `<CurrentStep key={step} />` instead.
@@ -166,19 +188,18 @@ Two-tier data source for competitor analysis:
 
 ## Known Issues — Must Fix Before Production
 
-| Priority | Issue | Location |
-|----------|-------|----------|
-| Critical | No auth middleware — all API routes accessible without login | Need `middleware.ts` |
-| Critical | Auth accepts any credentials (stub) | `src/lib/auth.ts` |
-| High | SSRF in scrape-website — can fetch internal URLs | `src/app/api/strategy/scrape-website/route.ts` |
-| High | No security headers (X-Frame-Options, CSP, HSTS) | `next.config.ts` |
-| High | No rate limiting on API routes | Need middleware or Vercel edge config |
-| Medium | Null bytes in topic crash generation + leak system prompt | `src/app/api/studio/generate/route.ts` |
-| Medium | Register API echoes unsanitized input | `src/app/api/auth/register/route.ts` |
-| Medium | Error message leakage in discovery route | `src/app/api/strategy/discovery/route.ts` |
-| Low | `/api/studio/save` accepts empty body | Stub route |
-| Low | NextAuth ClientFetchError on all pages (no DB) | Expected in dev |
-| Low | Script tag warnings from framework | Next.js internals |
+| Priority | Issue | Location | Status |
+|----------|-------|----------|--------|
+| ~~Critical~~ | ~~No auth middleware~~ | `src/proxy.ts` | **FIXED** — proxy.ts protects pages + API routes |
+| ~~Critical~~ | ~~Auth accepts any credentials (stub)~~ | `src/lib/auth.ts` | **FIXED** — Prisma + bcrypt real auth |
+| High | SSRF in scrape-website — can fetch internal URLs | `src/app/api/strategy/scrape-website/route.ts` | Open |
+| High | No security headers (X-Frame-Options, CSP, HSTS) | `next.config.ts` | Open |
+| High | No rate limiting on API routes | Need Vercel edge config | Open |
+| Medium | Null bytes in topic crash generation + leak system prompt | `src/app/api/studio/generate/route.ts` | Open |
+| ~~Medium~~ | ~~Register API echoes unsanitized input~~ | `src/app/api/auth/register/route.ts` | **FIXED** — returns only `{ id, name, email }` |
+| Medium | Error message leakage in discovery route | `src/app/api/strategy/discovery/route.ts` | Open |
+| ~~Low~~ | ~~`/api/studio/save` accepts empty body~~ | `src/app/api/studio/save/route.ts` | **FIXED** — validates body, requires brand |
+| Low | Script tag warnings from framework | Next.js internals | Won't fix |
 
 ## Creator Techniques Integration (from claude-instagram-techniques.docx)
 

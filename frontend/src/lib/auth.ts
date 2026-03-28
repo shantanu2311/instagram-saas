@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-// import Instagram from "next-auth/providers/instagram";
+import bcrypt from "bcryptjs";
+import { prisma } from "@/lib/db";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
@@ -17,36 +18,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        // TODO: Connect to Prisma DB for real user lookup
-        // const user = await prisma.user.findUnique({
-        //   where: { email: credentials.email },
-        // });
-        // if (!user || !await bcrypt.compare(credentials.password, user.password)) {
-        //   return null;
-        // }
-        // return { id: user.id, name: user.name, email: user.email };
-
-        // Stub: Accept any email/password for development
         const email = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
 
         if (!email || !password) return null;
 
-        // Return a stub user for development
+        const user = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (!user || !user.passwordHash) return null;
+
+        const passwordMatch = await bcrypt.compare(password, user.passwordHash);
+        if (!passwordMatch) return null;
+
         return {
-          id: "stub-user-id",
-          name: "Dev User",
-          email,
+          id: user.id,
+          name: user.name,
+          email: user.email,
         };
       },
     }),
-
-    // Instagram OAuth — uncomment when ready
-    // Requires INSTAGRAM_CLIENT_ID and INSTAGRAM_CLIENT_SECRET in .env
-    // Instagram({
-    //   clientId: process.env.INSTAGRAM_CLIENT_ID,
-    //   clientSecret: process.env.INSTAGRAM_CLIENT_SECRET,
-    // }),
   ],
   callbacks: {
     async jwt({ token, user }) {

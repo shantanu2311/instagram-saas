@@ -175,28 +175,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Social proof bar */}
+      {/* Value prop bar */}
       <section className="border-y border-border/40 py-6 px-6 bg-muted/20">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4">
-          <div className="flex -space-x-3">
-            {[
-              "from-ig-pink to-ig-orange",
-              "from-ig-orange to-amber-400",
-              "from-emerald-400 to-teal-500",
-              "from-blue-400 to-indigo-500",
-              "from-ig-pink to-ig-purple",
-            ].map((gradient, i) => (
-              <div
-                key={i}
-                className={`h-9 w-9 rounded-full bg-gradient-to-br ${gradient} border-2 border-background`}
-              />
-            ))}
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-ig-pink" />
+            <span>AI-Powered Strategy</span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Trusted by{" "}
-            <span className="font-semibold text-foreground">500+</span>{" "}
-            Instagram creators
-          </p>
+          <div className="hidden sm:block h-4 w-px bg-border" />
+          <div className="flex items-center gap-2">
+            <Wand2 className="h-4 w-4 text-ig-orange" />
+            <span>Branded Image Generation</span>
+          </div>
+          <div className="hidden sm:block h-4 w-px bg-border" />
+          <div className="flex items-center gap-2">
+            <Send className="h-4 w-4 text-ig-purple" />
+            <span>Auto-Post to Instagram</span>
+          </div>
         </div>
       </section>
 
@@ -523,7 +518,7 @@ export default function LandingPage() {
               Ready to grow on Instagram?
             </h2>
             <p className="text-muted-foreground">
-              Join 500+ creators using AI to build their brand
+              AI-powered strategy, content generation, and auto-posting
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-md mx-auto">
               <input

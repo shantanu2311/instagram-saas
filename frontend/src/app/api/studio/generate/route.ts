@@ -4,8 +4,20 @@ import {
   type BrandContext,
   type StrategyContext,
 } from "@/lib/content-engine";
+import {
+  generateImage,
+  buildBackendBrand,
+  buildFactCardTemplate,
+  mediaUrl,
+} from "@/lib/backend-client";
+import { auth } from "@/lib/auth";
 
 export async function POST(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let body: any;
@@ -61,27 +73,55 @@ export async function POST(request: Request) {
       strategy,
     });
 
+    // Generate image via backend (if running)
+    let image_url: string | null = null;
+    const contentType = body.content_type || "image";
+    if (contentType !== "reel") {
+      const template = buildFactCardTemplate({
+        headline: result.headline,
+        body: result.caption.slice(0, 200),
+        category: (body.pillar || "facts").toUpperCase(),
+      });
+      const backendBrand = buildBackendBrand({
+        primaryColor: body.brand?.primary_color
+          ? `#${body.brand.primary_color.map((c: number) => c.toString(16).padStart(2, "0")).join("")}`
+          : "#8b5cf6",
+        secondaryColor: body.brand?.secondary_color
+          ? `#${body.brand.secondary_color.map((c: number) => c.toString(16).padStart(2, "0")).join("")}`
+          : "#ec4899",
+        accentColor: body.brand?.accent_color
+          ? `#${body.brand.accent_color.map((c: number) => c.toString(16).padStart(2, "0")).join("")}`
+          : "#f59e0b",
+        brandName: body.brand?.brand_name || "",
+      });
+      const imgResult = await generateImage(template, backendBrand);
+      if (imgResult?.path) {
+        const path = Array.isArray(imgResult.path) ? imgResult.path[0] : imgResult.path;
+        image_url = mediaUrl(path);
+      }
+    }
+
     return NextResponse.json({
       status: "generated",
-      image_url: null, // No image generation yet — frontend shows branded placeholder
+      image_url,
       headline: result.headline,
       caption: result.caption,
       hashtags: result.hashtags,
       quality_score: result.quality_score,
       quality_criteria: result.quality_criteria,
-      content_type: body.content_type || "image",
+      content_type: contentType,
       generation_tier: body.generation_tier || "standard",
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";
     console.error("Studio generate error:", message);
 
-    // If ANTHROPIC_API_KEY is missing, return helpful error
-    if (message.includes("ANTHROPIC_API_KEY")) {
+    // If API key is missing, return helpful error
+    if (message.includes("OPENAI_API_KEY")) {
       return NextResponse.json(
         {
           error:
-            "Set ANTHROPIC_API_KEY in frontend/.env to enable AI content generation.",
+            "Set OPENAI_API_KEY in frontend/.env to enable AI content generation.",
         },
         { status: 500 }
       );

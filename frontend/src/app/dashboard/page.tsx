@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,6 +15,9 @@ import {
   Image as ImageIcon,
   ArrowRight,
   Sparkles,
+  FileText,
+  Clock,
+  Send,
 } from "lucide-react";
 import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { StrategySummaryCard } from "@/components/dashboard/strategy-summary-card";
@@ -34,19 +38,45 @@ function formatDate() {
   });
 }
 
-const kpis = [
-  { label: "Posts This Week", value: "0 / 7", icon: ImageIcon, color: "text-ig-pink" },
-  { label: "Total Reach", value: "—", icon: Eye, color: "text-blue-500" },
-  { label: "Engagement Rate", value: "—", icon: Heart, color: "text-ig-orange" },
-  { label: "Follower Growth", value: "—", icon: TrendingUp, color: "text-emerald-500" },
-];
+interface DashboardStats {
+  isNewUser: boolean;
+  hasBrand: boolean;
+  postsThisWeek: number;
+  totalContent: number;
+  drafts: number;
+  queued: number;
+  published: number;
+  recentContent: Array<{
+    id: string;
+    contentType: string;
+    caption: string | null;
+    status: string;
+    qualityScore: number | null;
+    createdAt: string;
+  }>;
+}
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const userName = session?.user?.name || "Creator";
-  // TODO: Check if user has connected Instagram / created strategy / posted content
-  // For now, show new-user state
-  const isNewUser = true;
+
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+
+  useEffect(() => {
+    fetch("/api/dashboard/stats")
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setStats)
+      .catch(() => {});
+  }, []);
+
+  const isNewUser = stats?.isNewUser ?? true;
+
+  const kpis = [
+    { label: "Posts This Week", value: stats ? `${stats.postsThisWeek} / 7` : "—", icon: ImageIcon, color: "text-ig-pink" },
+    { label: "Drafts", value: stats ? String(stats.drafts) : "—", icon: FileText, color: "text-blue-500" },
+    { label: "In Queue", value: stats ? String(stats.queued) : "��", icon: Clock, color: "text-ig-orange" },
+    { label: "Published", value: stats ? String(stats.published) : "—", icon: Send, color: "text-emerald-500" },
+  ];
 
   return (
     <PageTransition>
@@ -157,6 +187,54 @@ export default function DashboardPage() {
               <StrategySummaryCard />
               <OnboardingChecklist />
             </div>
+
+            {/* Recent Content */}
+            {stats?.recentContent && stats.recentContent.length > 0 && (
+              <Card className="border-border/40">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Recent Content</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {stats.recentContent.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between py-2 border-b border-border/30 last:border-0"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="text-[10px] uppercase font-medium text-muted-foreground bg-muted/50 rounded px-1.5 py-0.5">
+                            {item.contentType}
+                          </span>
+                          <p className="text-sm truncate">
+                            {item.caption
+                              ? item.caption.slice(0, 60) + (item.caption.length > 60 ? "..." : "")
+                              : "Untitled"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {item.qualityScore && (
+                            <span className="text-[10px] text-emerald-500 font-medium">
+                              {item.qualityScore}/100
+                            </span>
+                          )}
+                          <span
+                            className={`text-[10px] rounded-full px-2 py-0.5 ${
+                              item.status === "published"
+                                ? "bg-emerald-500/10 text-emerald-500"
+                                : item.status === "queued"
+                                  ? "bg-blue-500/10 text-blue-500"
+                                  : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {item.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
 

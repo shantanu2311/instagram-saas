@@ -1,6 +1,36 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 
 export async function GET() {
-  // Stub — returns empty drafts until database is connected
-  return NextResponse.json([]);
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userId = session.user.id;
+
+  const brand = await prisma.brand.findFirst({ where: { userId } });
+  if (!brand) {
+    return NextResponse.json([]);
+  }
+
+  const drafts = await prisma.generatedContent.findMany({
+    where: { brandId: brand.id, status: "draft" },
+    orderBy: { updatedAt: "desc" },
+    select: {
+      id: true,
+      contentType: true,
+      prompt: true,
+      caption: true,
+      hashtags: true,
+      mediaUrls: true,
+      qualityScore: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  return NextResponse.json(drafts);
 }
