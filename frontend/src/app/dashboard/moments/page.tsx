@@ -35,31 +35,36 @@ const momentTypes = [
   {
     value: "launch",
     label: "Launch",
-    color: "bg-ig-pink/10 text-ig-pink",
+    bgClass: "bg-ig-pink/10",
+    textClass: "text-ig-pink",
     icon: Rocket,
   },
   {
     value: "event",
     label: "Event",
-    color: "bg-blue-500/10 text-blue-500",
+    bgClass: "bg-blue-500/10",
+    textClass: "text-blue-500",
     icon: PartyPopper,
   },
   {
     value: "milestone",
     label: "Milestone",
-    color: "bg-amber-500/10 text-amber-500",
+    bgClass: "bg-amber-500/10",
+    textClass: "text-amber-500",
     icon: Trophy,
   },
   {
     value: "collaboration",
     label: "Collaboration",
-    color: "bg-emerald-500/10 text-emerald-500",
+    bgClass: "bg-emerald-500/10",
+    textClass: "text-emerald-500",
     icon: Users,
   },
   {
     value: "seasonal",
     label: "Seasonal",
-    color: "bg-purple-500/10 text-purple-500",
+    bgClass: "bg-purple-500/10",
+    textClass: "text-purple-500",
     icon: Sun,
   },
 ];
@@ -397,14 +402,14 @@ export default function MomentsPage() {
                     {/* Dot */}
                     <div
                       className={`absolute -left-6 top-4 h-5 w-5 rounded-full border-2 border-background flex items-center justify-center ${
-                        isPast ? "bg-muted" : mt.color.split(" ")[0]
+                        isPast ? "bg-muted" : mt.bgClass
                       }`}
                     >
                       <Icon
                         className={`h-2.5 w-2.5 ${
                           isPast
                             ? "text-muted-foreground"
-                            : mt.color.split(" ")[1]
+                            : mt.textClass
                         }`}
                       />
                     </div>
@@ -421,7 +426,7 @@ export default function MomentsPage() {
                               <h3 className="text-sm font-semibold">
                                 {moment.title}
                               </h3>
-                              <Badge className={`text-[10px] ${mt.color}`}>
+                              <Badge className={`text-[10px] ${mt.bgClass} ${mt.textClass}`}>
                                 {mt.label}
                               </Badge>
                               {moment.isRecurring && (

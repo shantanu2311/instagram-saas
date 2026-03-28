@@ -47,15 +47,16 @@ export async function POST(request: Request) {
     },
   });
 
-  // If calendarSlotId provided, link and update slot
+  // If calendarSlotId provided, verify ownership then link
   if (body.calendarSlotId) {
-    try {
+    const slot = await prisma.calendarSlot.findFirst({
+      where: { id: String(body.calendarSlotId), userId: session.user.id },
+    });
+    if (slot) {
       await prisma.calendarSlot.update({
-        where: { id: String(body.calendarSlotId) },
+        where: { id: slot.id },
         data: { status: "uploaded", contentId: content.id },
       });
-    } catch {
-      // Slot not found or already linked, non-fatal
     }
   }
 

@@ -53,8 +53,8 @@ export async function POST(request: Request) {
       data: {
         userId: session.user.id,
         brandId: brand?.id || null,
-        filename: file.name,
-        url: `/api/media/uploads/${Date.now()}-${file.name}`,
+        filename: file.name.replace(/[<>"'\\\/\x00-\x1f]/g, "_"),
+        url: `/api/media/uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
         mimeType: file.type,
         sizeBytes: file.size,
         source: "upload",

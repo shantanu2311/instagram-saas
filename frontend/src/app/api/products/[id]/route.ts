@@ -43,12 +43,12 @@ export async function PATCH(
       price:
         body.price !== undefined
           ? body.price
-            ? parseFloat(body.price)
+            ? Math.max(0, parseFloat(body.price) || 0)
             : null
           : product.price,
       imageUrl:
         body.imageUrl !== undefined ? body.imageUrl : product.imageUrl,
-      usps: body.usps !== undefined ? body.usps : product.usps,
+      usps: body.usps !== undefined ? (Array.isArray(body.usps) ? body.usps : product.usps) : product.usps,
       isActive:
         body.isActive !== undefined ? body.isActive : product.isActive,
     },

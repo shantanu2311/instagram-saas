@@ -13,7 +13,10 @@ export async function GET(request: Request) {
   const weekStart = url.searchParams.get("weekStart");
   if (!weekStart) return NextResponse.json({ error: "weekStart required" }, { status: 400 });
 
-  const brand = await prisma.brand.findFirst({ where: { userId: session.user.id } });
+  const brandIdParam = url.searchParams.get("brandId");
+  const brand = brandIdParam
+    ? await prisma.brand.findFirst({ where: { id: brandIdParam, userId: session.user.id } })
+    : await prisma.brand.findFirst({ where: { userId: session.user.id } });
   if (!brand) return NextResponse.json(null);
 
   const brief = await prisma.weeklyBrief.findUnique({
@@ -35,6 +38,15 @@ export async function POST(request: Request) {
   if (!brand) return NextResponse.json({ error: "Create a brand first" }, { status: 400 });
 
   const weekStartDate = new Date(body.weekStartDate);
+  if (isNaN(weekStartDate.getTime())) {
+    return NextResponse.json({ error: "Invalid date format" }, { status: 400 });
+  }
+  // Normalize to Monday
+  const day = weekStartDate.getUTCDay();
+  if (day !== 1) {
+    const diff = day === 0 ? -6 : 1 - day;
+    weekStartDate.setUTCDate(weekStartDate.getUTCDate() + diff);
+  }
 
   const brief = await prisma.weeklyBrief.upsert({
     where: { brandId_weekStartDate: { brandId: brand.id, weekStartDate } },

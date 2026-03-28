@@ -299,7 +299,7 @@ export default function ProductsPage() {
                     <div className="flex flex-wrap gap-1.5">
                       {form.usps.map((usp, i) => (
                         <Badge
-                          key={i}
+                          key={`${i}-${usp}`}
                           variant="secondary"
                           className="gap-1 pr-1"
                         >

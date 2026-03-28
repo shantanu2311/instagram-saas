@@ -65,6 +65,7 @@ interface SyncExternalPost {
 interface DashboardStats {
   isNewUser: boolean;
   hasBrand: boolean;
+  brandId: string | null;
   hasInstagram: boolean;
   postsThisWeek: number;
   totalContent: number;
@@ -320,7 +321,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium">Weekly Brief</p>
                     <p className="text-xs text-muted-foreground">Tell the AI about this week&apos;s launches, events, or trends</p>
                   </div>
-                  <WeeklyBriefDialog brandId="" weekStart={monday} onSave={fetchBrief} />
+                  <WeeklyBriefDialog brandId={stats?.brandId || ""} weekStart={monday} onSave={fetchBrief} />
                 </CardContent>
               </Card>
             )}

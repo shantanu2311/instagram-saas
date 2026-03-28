@@ -157,6 +157,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     isNewUser: totalContent === 0 && !brand,
     hasBrand: !!brand,
+    brandId: brand?.id || null,
     hasInstagram: !!igAccount,
     postsThisWeek,
     totalContent,

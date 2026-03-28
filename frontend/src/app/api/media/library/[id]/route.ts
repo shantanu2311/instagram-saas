@@ -62,10 +62,30 @@ export async function PATCH(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  if (body.tags !== undefined) {
+    if (
+      !Array.isArray(body.tags) ||
+      body.tags.some(
+        (t: unknown) => typeof t !== "string" || (t as string).length > 100
+      )
+    ) {
+      return NextResponse.json(
+        { error: "Tags must be an array of strings (max 100 chars each)" },
+        { status: 400 }
+      );
+    }
+    if (body.tags.length > 50) {
+      return NextResponse.json(
+        { error: "Maximum 50 tags allowed" },
+        { status: 400 }
+      );
+    }
+  }
+
   const updated = await prisma.mediaAsset.update({
     where: { id },
     data: {
-      tags: body.tags !== undefined ? (body.tags as any) : undefined,
+      tags: body.tags !== undefined ? body.tags : undefined,
     },
   });
 

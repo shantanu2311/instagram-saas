@@ -10,9 +10,12 @@ export async function GET(request: Request) {
   if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const brand = await prisma.brand.findFirst({
-    where: { userId: session.user.id },
-  });
+  const url = new URL(request.url);
+  const brandId = url.searchParams.get("brandId");
+
+  const brand = brandId
+    ? await prisma.brand.findFirst({ where: { id: brandId, userId: session.user.id } })
+    : await prisma.brand.findFirst({ where: { userId: session.user.id } });
   if (!brand) return NextResponse.json([]);
 
   const products = await prisma.product.findMany({
@@ -57,9 +60,9 @@ export async function POST(request: Request) {
       name: body.name.trim(),
       description: body.description || null,
       category: body.category || null,
-      price: body.price ? parseFloat(body.price) : null,
+      price: body.price ? Math.max(0, parseFloat(body.price) || 0) : null,
       imageUrl: body.imageUrl || null,
-      usps: body.usps || [],
+      usps: Array.isArray(body.usps) ? body.usps : [],
     },
   });
   return NextResponse.json(product);

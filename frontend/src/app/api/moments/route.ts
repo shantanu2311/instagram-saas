@@ -10,9 +10,12 @@ export async function GET(request: Request) {
   if (!session?.user?.id)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const brand = await prisma.brand.findFirst({
-    where: { userId: session.user.id },
-  });
+  const url = new URL(request.url);
+  const brandId = url.searchParams.get("brandId");
+
+  const brand = brandId
+    ? await prisma.brand.findFirst({ where: { id: brandId, userId: session.user.id } })
+    : await prisma.brand.findFirst({ where: { userId: session.user.id } });
   if (!brand) return NextResponse.json([]);
 
   const moments = await prisma.brandMoment.findMany({
