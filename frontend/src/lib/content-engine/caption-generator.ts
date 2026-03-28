@@ -43,6 +43,21 @@ ${req.brand.brandHashtag ? `- Brand hashtag: ${req.brand.brandHashtag}` : ""}`;
     }
   }
 
+  if (req.products?.length) {
+    prompt += `\n\nPRODUCT CATALOGUE (reference these naturally when relevant):`;
+    for (const p of req.products.slice(0, 5)) {
+      prompt += `\n- ${p.name}${p.category ? ` [${p.category}]` : ""}${p.description ? `: ${p.description.slice(0, 100)}` : ""}`;
+      if (p.usps?.length) prompt += ` (USPs: ${p.usps.slice(0, 3).join(", ")})`;
+    }
+  }
+
+  if (req.moments?.length) {
+    prompt += `\n\nUPCOMING BRAND MOMENTS (weave into content if topically relevant):`;
+    for (const m of req.moments.slice(0, 5)) {
+      prompt += `\n- ${m.title} (${m.type}, ${m.date})${m.description ? `: ${m.description.slice(0, 80)}` : ""}`;
+    }
+  }
+
   prompt += `\n\nCONTENT TYPE: ${req.contentType}
 STYLE: ${req.style}
 PILLAR: ${req.pillar}
@@ -110,7 +125,8 @@ export async function generateCaption(
     throw new Error("Failed to parse caption response from Claude");
   }
 
-  let parsed: Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let parsed: any;
   try {
     parsed = JSON.parse(jsonMatch[0]);
   } catch {

@@ -3,7 +3,10 @@ import {
   generateCaption,
   type BrandContext,
   type StrategyContext,
+  type ProductContext,
+  type MomentContext,
 } from "@/lib/content-engine";
+import { prisma } from "@/lib/db";
 import {
   generateImage,
   buildBackendBrand,
@@ -74,6 +77,37 @@ export async function POST(request: Request) {
 
     const slideCount = Math.min(10, Math.max(2, Number(body.slide_count) || 5));
 
+    // Fetch products and upcoming moments for AI context
+    let products: ProductContext[] = [];
+    let moments: MomentContext[] = [];
+    try {
+      const userBrand = await prisma.brand.findFirst({ where: { userId: session.user.id } });
+      if (userBrand) {
+        const [dbProducts, dbMoments] = await Promise.all([
+          prisma.product.findMany({ where: { brandId: userBrand.id, isActive: true }, take: 5 }),
+          prisma.brandMoment.findMany({
+            where: { brandId: userBrand.id, date: { gte: new Date() } },
+            orderBy: { date: "asc" },
+            take: 5,
+          }),
+        ]);
+        products = dbProducts.map(p => ({
+          name: p.name,
+          description: p.description,
+          category: p.category,
+          usps: Array.isArray(p.usps) ? p.usps as string[] : [],
+        }));
+        moments = dbMoments.map(m => ({
+          title: m.title,
+          date: m.date.toISOString().slice(0, 10),
+          type: m.type,
+          description: m.description,
+        }));
+      }
+    } catch {
+      // Non-fatal: generate without product/moment context
+    }
+
     const result = await generateCaption({
       topic: body.topic || "Instagram post",
       pillar: body.pillar || "facts",
@@ -82,6 +116,8 @@ export async function POST(request: Request) {
       brand,
       strategy,
       slideCount,
+      products: products.length > 0 ? products : undefined,
+      moments: moments.length > 0 ? moments : undefined,
     });
 
     // Generate image via backend (if running)

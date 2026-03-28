@@ -88,6 +88,20 @@ export interface StrategyContext {
   hashtagStrategy?: { branded: string[]; niche: string[]; trending: string[] };
 }
 
+export interface ProductContext {
+  name: string;
+  description?: string | null;
+  category?: string | null;
+  usps?: string[];
+}
+
+export interface MomentContext {
+  title: string;
+  date: string;
+  type: string;
+  description?: string | null;
+}
+
 export interface GenerateContentRequest {
   topic: string;
   pillar: string;
@@ -96,6 +110,8 @@ export interface GenerateContentRequest {
   brand: BrandContext;
   strategy?: StrategyContext | null;
   slideCount?: number;
+  products?: ProductContext[];
+  moments?: MomentContext[];
 }
 
 export interface GenerateContentResult {
