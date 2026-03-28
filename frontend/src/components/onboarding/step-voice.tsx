@@ -122,18 +122,103 @@ export function StepVoice() {
         />
       </div>
 
-      {/* Sample caption */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">
-          Paste a caption you love (optional)
-        </Label>
-        <textarea
-          value={brand.sampleCaption}
-          onChange={(e) => updateBrand({ sampleCaption: e.target.value })}
-          placeholder="Paste one of your best-performing captions so AI can learn your style..."
-          rows={3}
-          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        />
+      {/* Few-shot voice examples */}
+      <div className="space-y-3">
+        <div>
+          <Label className="text-sm font-medium">
+            Paste your best captions (3–10 recommended)
+          </Label>
+          <p className="text-xs text-muted-foreground mt-1">
+            AI learns your voice from these examples. More examples = better
+            style matching.
+          </p>
+        </div>
+        <div className="space-y-2">
+          {(brand.sampleCaptions.length === 0 ? [""] : brand.sampleCaptions).map(
+            (cap, i) => (
+              <div key={i} className="flex gap-2">
+                <div className="flex-1 relative">
+                  <span className="absolute left-3 top-2.5 text-xs text-muted-foreground/60 font-mono">
+                    {i + 1}.
+                  </span>
+                  <textarea
+                    value={cap}
+                    onChange={(e) => {
+                      const updated = [...brand.sampleCaptions];
+                      if (updated.length === 0) updated.push("");
+                      updated[i] = e.target.value;
+                      updateBrand({ sampleCaptions: updated });
+                    }}
+                    placeholder={
+                      i === 0
+                        ? "Paste your best-performing caption here..."
+                        : "Paste another caption..."
+                    }
+                    rows={2}
+                    className="w-full rounded-md border border-input bg-background pl-8 pr-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                </div>
+                {brand.sampleCaptions.length > 1 && (
+                  <button
+                    onClick={() => {
+                      const updated = brand.sampleCaptions.filter(
+                        (_, j) => j !== i
+                      );
+                      updateBrand({ sampleCaptions: updated });
+                    }}
+                    className="self-start mt-2 text-muted-foreground/40 hover:text-rose-500 transition-colors"
+                    title="Remove"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <line x1="18" y1="6" x2="6" y2="18" />
+                      <line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            )
+          )}
+        </div>
+        {brand.sampleCaptions.length < 10 && (
+          <button
+            onClick={() =>
+              updateBrand({
+                sampleCaptions: [
+                  ...(brand.sampleCaptions.length === 0
+                    ? []
+                    : brand.sampleCaptions),
+                  "",
+                ],
+              })
+            }
+            className="text-xs text-ig-pink hover:text-ig-pink/80 font-medium flex items-center gap-1"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add another caption
+            {brand.sampleCaptions.filter((c) => c.trim()).length > 0 && (
+              <span className="text-muted-foreground/60 ml-1">
+                ({brand.sampleCaptions.filter((c) => c.trim()).length}/10)
+              </span>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Brand hashtag */}

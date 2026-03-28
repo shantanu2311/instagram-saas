@@ -22,6 +22,11 @@ import {
   Trophy,
   Loader2,
   Sparkles,
+  Zap,
+  Clapperboard,
+  ChevronDown,
+  ChevronUp,
+  EyeOff,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -108,7 +113,7 @@ export default function ReviewPage() {
         toneFormality: savedBrand.toneFormality,
         toneHumor: savedBrand.toneHumor,
         voiceDescription: savedBrand.voiceDescription,
-        sampleCaption: savedBrand.sampleCaption,
+        sampleCaptions: savedBrand.sampleCaptions?.filter((c: string) => c.trim()) || [],
         contentPillars: savedBrand.contentPillars,
         brandHashtag: savedBrand.brandHashtag,
       };
@@ -450,7 +455,7 @@ export default function ReviewPage() {
             <p className="text-xs font-medium text-muted-foreground">
               Sample Captions
             </p>
-            {strategy.toneAndVoice.sampleCaptions.map((cap: string) => (
+            {strategy.toneAndVoice?.sampleCaptions?.map((cap: string) => (
               <blockquote
                 key={cap}
                 className="border-l-2 border-ig-pink/40 pl-3 text-xs italic text-muted-foreground"
@@ -578,6 +583,60 @@ export default function ReviewPage() {
         </div>
       </SectionCard>
 
+      {/* Hook Formula Bank */}
+      {strategy.hookFormulas && strategy.hookFormulas.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Zap className="h-4 w-4 text-ig-pink" />
+              Hook Formula Bank
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {strategy.hookFormulas.map((hook: any, i: number) => (
+                <div
+                  key={i}
+                  className="rounded-lg border border-border/40 p-3 space-y-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="secondary"
+                      className="text-[10px] bg-ig-pink/10 text-ig-pink"
+                    >
+                      {hook.type}
+                    </Badge>
+                  </div>
+                  <p className="text-sm font-medium">{hook.template}</p>
+                  <p className="text-xs text-muted-foreground italic">
+                    &ldquo;{hook.example}&rdquo;
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Reel Structures */}
+      {strategy.reelStructures && strategy.reelStructures.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Clapperboard className="h-4 w-4 text-ig-pink" />
+              Reel Structures
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {strategy.reelStructures.map((reel: any, i: number) => (
+                <ReelStructureCard key={i} reel={reel} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Milestones */}
       <Card>
         <CardHeader>
@@ -701,6 +760,53 @@ function SectionCard({
       </CardHeader>
       <CardContent>{children}</CardContent>
     </Card>
+  );
+}
+
+function ReelStructureCard({ reel }: { reel: any }) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-border/40 p-3 space-y-2">
+      <button
+        className="w-full flex items-center justify-between text-left"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{reel.name}</span>
+          <Badge variant="secondary" className="text-[10px]">
+            {reel.duration}
+          </Badge>
+          {reel.faceless && (
+            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+              <EyeOff className="h-3 w-3" />
+              Faceless
+            </span>
+          )}
+        </div>
+        {expanded ? (
+          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        )}
+      </button>
+      {expanded && (
+        <div className="space-y-1.5 pt-1">
+          {reel.sections?.map((section: any, j: number) => (
+            <div
+              key={j}
+              className="flex items-start gap-3 text-xs rounded-md bg-muted/50 px-3 py-2"
+            >
+              <span className="font-mono text-[10px] text-muted-foreground shrink-0 w-16">
+                {section.duration}
+              </span>
+              <span className="font-medium shrink-0 w-14">{section.label}</span>
+              <span className="text-muted-foreground">{section.instruction}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

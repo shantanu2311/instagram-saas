@@ -14,6 +14,7 @@ import {
   Lightbulb,
   Plus,
   ListChecks,
+  Hash,
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/strategy", label: "Strategy", icon: Lightbulb },
   { href: "/studio", label: "Content Studio", icon: Wand2 },
   { href: "/queue", label: "Content Queue", icon: ListChecks },
+  { href: "/studio/hashtags", label: "Hashtag Explorer", icon: Hash },
   { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },

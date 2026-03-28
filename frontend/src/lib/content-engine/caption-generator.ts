@@ -23,7 +23,7 @@ BRAND CONTEXT:
 - Niche: ${req.brand.niche || "general"}
 - Tone: ${tone}
 ${req.brand.voiceDescription ? `- Voice: ${req.brand.voiceDescription}` : ""}
-${req.brand.sampleCaption ? `- Example of their voice: "${req.brand.sampleCaption}"` : ""}
+${req.brand.sampleCaptions?.length ? `\nFEW-SHOT VOICE EXAMPLES (match this style closely):\n${req.brand.sampleCaptions.map((c, i) => `${i + 1}. "${c}"`).join("\n")}` : ""}
 - Content pillars: ${req.brand.contentPillars.length > 0 ? req.brand.contentPillars.join(", ") : "education, entertainment, engagement"}
 ${req.brand.brandHashtag ? `- Brand hashtag: ${req.brand.brandHashtag}` : ""}`;
 
@@ -54,7 +54,7 @@ RULES:
 4. Caption length: 150-400 characters for images, 200-600 for carousels, 100-250 for reels
 5. Generate 8-12 relevant hashtags mixing branded, niche, and reach tags
 6. Headline must be punchy (max 10 words) for the image overlay
-7. Match the brand's tone exactly — ${tone}
+7. Match the brand's tone exactly — ${tone}${req.brand.sampleCaptions?.length ? `\n8. Study the few-shot voice examples above. Mirror their sentence structure, vocabulary level, emoji usage, and personality. The output should feel like the same person wrote it.` : ""}
 
 Return ONLY valid JSON with this exact structure:
 {

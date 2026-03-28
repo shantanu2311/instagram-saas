@@ -41,6 +41,8 @@ export async function POST(request: Request) {
       ambition: body.ambition || "",
       monetizationGoal: body.monetizationGoal || "",
       instagramHandle: body.instagramHandle || "",
+      deepDiveAnswers: body.deepDiveAnswers || undefined,
+      researchResults: body.researchResults || undefined,
     });
 
     return NextResponse.json(strategy);

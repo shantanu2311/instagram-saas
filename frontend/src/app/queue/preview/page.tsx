@@ -136,7 +136,7 @@ export default function DesignPreviewPage() {
       toneFormality: savedBrand.toneFormality,
       toneHumor: savedBrand.toneHumor,
       voiceDescription: savedBrand.voiceDescription,
-      sampleCaption: savedBrand.sampleCaption,
+      sampleCaptions: savedBrand.sampleCaptions?.filter((c: string) => c.trim()) || [],
       contentPillars: savedBrand.contentPillars,
       brandHashtag: savedBrand.brandHashtag,
     };

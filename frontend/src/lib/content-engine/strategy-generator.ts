@@ -52,7 +52,26 @@ Return ONLY valid JSON matching this exact structure:
     "day30": { "followers": "+500", "engagement": "2%", "posts": 20 },
     "day60": { "followers": "+2,000", "engagement": "3%", "posts": 40 },
     "day90": { "followers": "+5,000", "engagement": "4%", "posts": 60 }
-  }
+  },
+  "hookFormulas": [
+    {
+      "template": "Actually, {common belief} is wrong. Here's why...",
+      "example": "Actually, posting every day doesn't grow your account. Here's why...",
+      "type": "Pattern Interrupt"
+    }
+  ],
+  "reelStructures": [
+    {
+      "name": "15s Pattern Interrupt",
+      "duration": "15s",
+      "sections": [
+        { "label": "Hook", "duration": "0:00-0:03", "instruction": "Bold claim or question" },
+        { "label": "Proof", "duration": "0:03-0:12", "instruction": "Quick evidence or demo" },
+        { "label": "CTA", "duration": "0:12-0:15", "instruction": "Follow for more" }
+      ],
+      "faceless": false
+    }
+  ]
 }
 
 IMPORTANT:
@@ -61,7 +80,9 @@ IMPORTANT:
 - Schedule days must map to pillar names
 - All examples must be specific to THIS business, not generic
 - Growth tactics should be actionable within the first week
-- Milestones should be realistic for the niche`;
+- Milestones should be realistic for the niche
+- Generate 8-10 hook formulas specific to the user's niche. Cover these types: "Pattern Interrupt", "Controversial Take", "Surprising Stat", "Actually...", "Question Hook", "Story Hook". Each hook must have a template (with {placeholder} variables) and a filled-in example.
+- Generate 3-4 reel structures: a 15s (pattern interrupt), 30s (quick tip), 60s (teaching reel), and optionally a faceless structure. Each structure has timed sections with labels, durations, and instructions. Set "faceless" to true only for structures that work without showing face.`;
 
   const accountLabel =
     req.accountType === "creator"
@@ -92,7 +113,28 @@ ${req.monetizationGoal ? `MONETIZATION: ${req.monetizationGoal}` : ""}
 CONTENT PREFERENCES: ${req.contentPreferences.join(", ")}
 PAIN POINTS: ${req.painPoints.join(", ")}
 BRAND PERSONALITY: ${req.brandPersonality.join(", ")}
-POSTING HISTORY: ${req.postingHistory || "New to Instagram"}`;
+POSTING HISTORY: ${req.postingHistory || "New to Instagram"}${
+    req.researchResults
+      ? `\n\nRESEARCH FINDINGS (use these to inform your strategy):
+${req.researchResults.competitors && req.researchResults.competitors.length > 0
+  ? `COMPETITOR ANALYSIS:\n${req.researchResults.competitors.map(c =>
+      `- @${c.handle}${c.name ? ` (${c.name})` : ""}: ${(c.followers/1000).toFixed(0)}K followers, ${c.engagementRate}% engagement, ${c.postingFrequency}. Strengths: ${c.strengths.join(", ")}. Weaknesses: ${c.weaknesses.join(", ")}`
+    ).join("\n")}`
+  : ""}
+${req.researchResults.trends
+  ? `TRENDING IN NICHE:\n- Hashtags: ${req.researchResults.trends.hashtags.join(", ")}\n- Viral content: ${req.researchResults.trends.viralExamples.map(v => `${v.type}: "${v.topic}" (${v.views} views)`).join("; ")}\n- Trending formats: ${req.researchResults.trends.trendingFormats.map(f => `${f.name} (${f.growth})`).join(", ")}`
+  : ""}
+${req.researchResults.insights && req.researchResults.insights.length > 0
+  ? `KEY INSIGHTS:\n${req.researchResults.insights.map(i => `- ${i.text} (${i.confidence}% confidence)`).join("\n")}`
+  : ""}`
+      : ""
+  }${
+    req.deepDiveAnswers && req.deepDiveAnswers.length > 0
+      ? `\n\nADDITIONAL CONTEXT FROM FOLLOW-UP QUESTIONS:\n${req.deepDiveAnswers
+          .map((qa) => `Q: ${qa.question}\nA: ${qa.answer}`)
+          .join("\n\n")}`
+      : ""
+  }`;
 
   const text = await callClaude({
     system: systemPrompt,

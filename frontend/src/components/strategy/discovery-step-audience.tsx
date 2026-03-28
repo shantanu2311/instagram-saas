@@ -30,6 +30,8 @@ export function DiscoveryStepAudience() {
   const { profile, updateProfile, nextDiscoveryStep, prevDiscoveryStep } =
     useStrategyStore();
   const [customTag, setCustomTag] = useState("");
+  const [ageMinInput, setAgeMinInput] = useState(String(profile.targetAgeMin));
+  const [ageMaxInput, setAgeMaxInput] = useState(String(profile.targetAgeMax));
 
   const toggleDemographic = (tag: string) => {
     const current = profile.targetDemographics;
@@ -74,13 +76,16 @@ export function DiscoveryStepAudience() {
             <div className="flex items-center gap-3">
               <Input
                 type="number"
-                value={profile.targetAgeMin}
-                onChange={(e) => {
-                  const val = Math.max(13, Math.min(100, Number(e.target.value)));
+                value={ageMinInput}
+                onChange={(e) => setAgeMinInput(e.target.value)}
+                onBlur={() => {
+                  const val = Math.max(13, Math.min(100, Number(ageMinInput) || 13));
+                  setAgeMinInput(String(val));
                   updateProfile({
                     targetAgeMin: val,
                     ...(val > profile.targetAgeMax ? { targetAgeMax: val } : {}),
                   });
+                  if (val > profile.targetAgeMax) setAgeMaxInput(String(val));
                 }}
                 min={13}
                 max={100}
@@ -89,13 +94,16 @@ export function DiscoveryStepAudience() {
               <span className="text-sm text-muted-foreground">to</span>
               <Input
                 type="number"
-                value={profile.targetAgeMax}
-                onChange={(e) => {
-                  const val = Math.max(13, Math.min(100, Number(e.target.value)));
+                value={ageMaxInput}
+                onChange={(e) => setAgeMaxInput(e.target.value)}
+                onBlur={() => {
+                  const val = Math.max(13, Math.min(100, Number(ageMaxInput) || 13));
+                  setAgeMaxInput(String(val));
                   updateProfile({
                     targetAgeMax: val,
                     ...(val < profile.targetAgeMin ? { targetAgeMin: val } : {}),
                   });
+                  if (val < profile.targetAgeMin) setAgeMinInput(String(val));
                 }}
                 min={13}
                 max={100}

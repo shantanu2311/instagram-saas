@@ -35,7 +35,7 @@ export async function POST(request: Request) {
       toneFormality: body.toneFormality ?? 50,
       toneHumor: body.toneHumor ?? 50,
       voiceDescription: body.voiceDescription || "",
-      sampleCaption: "",
+      sampleCaptions: Array.isArray(body.sampleCaptions) ? body.sampleCaptions : [],
       contentPillars: body.contentPillars || [],
       brandHashtag: body.brandHashtag || "",
     };

@@ -1,38 +1,48 @@
 import { NextResponse } from "next/server";
-
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+import { generateResearch } from "@/lib/content-engine/research-generator";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const res = await fetch(`${BACKEND_URL}/strategy/research`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
+    let body: Record<string, unknown>;
+    try {
+      body = await request.json();
+    } catch {
       return NextResponse.json(
-        { error: `Backend error: ${error}` },
-        { status: res.status }
+        { error: "Request body is required." },
+        { status: 400 }
       );
     }
 
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch {
-    if (process.env.NODE_ENV === "development") {
-      return NextResponse.json({
-        status: "started",
-        mock: true,
-        researchId: "mock-research-1",
-        message: "Research started (mock)",
-      });
+    const result = await generateResearch({
+      accountType: String(body.accountType || "business"),
+      businessName: String(body.businessName || ""),
+      businessDescription: String(body.businessDescription || ""),
+      productService: String(body.productService || ""),
+      niche: String(body.niche || ""),
+      competitors: Array.isArray(body.competitors) ? body.competitors.map(String) : [],
+      goals: Array.isArray(body.goals) ? body.goals.map(String) : [],
+      targetDemographics: Array.isArray(body.targetDemographics) ? body.targetDemographics.map(String) : [],
+      targetLocation: String(body.targetLocation || ""),
+      targetAgeMin: Number(body.targetAgeMin) || 18,
+      targetAgeMax: Number(body.targetAgeMax) || 45,
+      targetGender: String(body.targetGender || "all"),
+      contentPreferences: Array.isArray(body.contentPreferences) ? body.contentPreferences.map(String) : [],
+      brandPersonality: Array.isArray(body.brandPersonality) ? body.brandPersonality.map(String) : [],
+      usp: String(body.usp || ""),
+    });
+
+    return NextResponse.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Research generation failed";
+    console.error("Research error:", message);
+
+    if (message.includes("ANTHROPIC_API_KEY")) {
+      return NextResponse.json(
+        { error: "Set ANTHROPIC_API_KEY in frontend/.env to enable AI features." },
+        { status: 500 }
+      );
     }
-    return NextResponse.json(
-      { error: "Research service unavailable. Please try again later." },
-      { status: 503 }
-    );
+
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

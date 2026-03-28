@@ -17,7 +17,7 @@ export interface BrandConfig {
   toneFormality: number; // 0=casual, 100=formal
   toneHumor: number; // 0=serious, 100=playful
   voiceDescription: string;
-  sampleCaption: string;
+  sampleCaptions: string[];
   // Step 4: Content strategy
   contentPillars: string[];
   postingDays: Record<string, string>; // "0"-"6" -> content type
@@ -52,7 +52,7 @@ const defaultBrand: BrandConfig = {
   toneFormality: 50,
   toneHumor: 50,
   voiceDescription: "",
-  sampleCaption: "",
+  sampleCaptions: [],
   contentPillars: [],
   postingDays: {
     "0": "education",

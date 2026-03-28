@@ -44,7 +44,7 @@ export async function POST(request: Request) {
       toneFormality: body.tone_formality ?? 50,
       toneHumor: body.tone_humor ?? 50,
       voiceDescription: body.brand_voice || "",
-      sampleCaption: body.sample_caption || "",
+      sampleCaptions: Array.isArray(body.sample_captions) ? body.sample_captions.filter((c: string) => c.trim()) : body.sample_caption ? [body.sample_caption] : [],
       contentPillars: body.content_pillars || [],
       brandHashtag: body.brand_hashtag || "",
     };

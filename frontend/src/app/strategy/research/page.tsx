@@ -22,94 +22,16 @@ import {
   Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { DeepDiveChat } from "@/components/strategy/deep-dive-chat";
 
 const researchSteps = [
   { label: "Analyzing your business", icon: Building2 },
-  { label: "Scraping competitor accounts", icon: Search },
+  { label: "Researching competitor accounts", icon: Search },
   { label: "Finding viral content in your niche", icon: TrendingUp },
-  { label: "Analyzing existing content", icon: BarChart3 },
+  { label: "Analyzing content patterns", icon: BarChart3 },
   { label: "Identifying content gaps", icon: Lightbulb },
   { label: "Generating insights", icon: Sparkles },
 ];
-
-// Mock data for development
-const mockResearchResults = {
-  competitors: [
-    {
-      handle: "competitor1",
-      followers: 45200,
-      engagementRate: 3.2,
-      postingFrequency: "5x/week",
-      topContentTypes: { reels: 45, carousels: 30, images: 25 },
-      strengths: ["Strong visuals", "Consistent posting"],
-      weaknesses: ["Low engagement", "No stories"],
-    },
-    {
-      handle: "competitor2",
-      followers: 120000,
-      engagementRate: 4.8,
-      postingFrequency: "7x/week",
-      topContentTypes: { reels: 60, carousels: 25, images: 15 },
-      strengths: ["Viral reels", "Great hooks"],
-      weaknesses: ["Inconsistent brand voice", "Few carousels"],
-    },
-  ],
-  trends: {
-    hashtags: [
-      "#growthmindset",
-      "#entrepreneurlife",
-      "#contentstrategy",
-      "#reelstrending",
-      "#businesstips",
-      "#socialmediastrategy",
-    ],
-    viralExamples: [
-      {
-        type: "Reel",
-        topic: "Day-in-the-life behind the scenes",
-        views: "2.3M",
-      },
-      { type: "Carousel", topic: "10 mistakes beginners make", views: "890K" },
-      {
-        type: "Reel",
-        topic: "Before vs after transformation",
-        views: "1.5M",
-      },
-    ],
-    trendingFormats: [
-      { name: "Talking head reels", growth: "+45%" },
-      { name: "Carousel tips", growth: "+32%" },
-      { name: "BTS content", growth: "+28%" },
-    ],
-  },
-  insights: [
-    {
-      text: "Your competitors post 5-7x per week. Match this frequency for competitive parity.",
-      confidence: 92,
-      actionable: true,
-    },
-    {
-      text: "Reels drive 3x more reach than static posts in your niche.",
-      confidence: 88,
-      actionable: true,
-    },
-    {
-      text: "Educational carousel posts get the most saves and shares.",
-      confidence: 85,
-      actionable: true,
-    },
-    {
-      text: "Engagement peaks between 7-9 AM and 6-8 PM in your target timezone.",
-      confidence: 78,
-      actionable: true,
-    },
-    {
-      text: "There's a content gap in your niche for behind-the-scenes content.",
-      confidence: 82,
-      actionable: true,
-    },
-  ],
-};
 
 export default function ResearchPage() {
   const router = useRouter();
@@ -127,40 +49,75 @@ export default function ResearchPage() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const [researchError, setResearchError] = useState<string | null>(null);
+  const [showDeepDive, setShowDeepDive] = useState(true);
+  const [deepDiveAnswers, setDeepDiveAnswers] = useState<
+    Array<{ question: string; answer: string }> | undefined
+  >(undefined);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const activeStepRef = useRef(0);
+  const fetchCalledRef = useRef(false);
 
-  // Simulate research progress
+  // Animate steps while AI research is running
   useEffect(() => {
     if (researchStatus !== "running") return;
 
     intervalRef.current = setInterval(() => {
       const current = activeStepRef.current;
       if (current >= researchSteps.length - 1) {
+        // Stay on last step (spinner) until API returns
         if (intervalRef.current) clearInterval(intervalRef.current);
-        setResearchStatus("complete");
-        setResearchResults(mockResearchResults);
-        setResearchProgress(100);
         return;
       }
       const next = current + 1;
       activeStepRef.current = next;
       setCompletedSteps((cs) => [...cs, current]);
       setActiveStep(next);
-    }, 2500);
+    }, 3000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [researchStatus, setResearchStatus, setResearchResults, setResearchProgress]);
+  }, [researchStatus]);
 
-  // If idle (direct navigation), start research simulation — run only on mount
-  // Use startTransition to avoid setState-during-render in strict mode
+  // Call AI research API when status becomes "running"
+  useEffect(() => {
+    if (researchStatus !== "running" || fetchCalledRef.current) return;
+    fetchCalledRef.current = true;
+
+    const doResearch = async () => {
+      try {
+        const res = await fetch("/api/strategy/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profile),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Research failed");
+        }
+        // Complete all remaining steps visually
+        setCompletedSteps(researchSteps.map((_, i) => i));
+        setActiveStep(researchSteps.length);
+        setResearchResults(data);
+        setResearchProgress(100);
+        setResearchStatus("complete");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Research failed";
+        console.error("Research error:", message);
+        setResearchError(message);
+        setResearchStatus("error");
+      }
+    };
+
+    doResearch();
+  }, [researchStatus, profile, setResearchResults, setResearchProgress, setResearchStatus]);
+
+  // If idle (direct navigation), start research — run only on mount
   const statusRef = useRef(researchStatus);
   statusRef.current = researchStatus;
   useEffect(() => {
     if (statusRef.current === "idle") {
-      // Defer to avoid React strict-mode double-render conflicts
       const id = setTimeout(() => setResearchStatus("running"), 0);
       return () => clearTimeout(id);
     }
@@ -173,7 +130,9 @@ export default function ResearchPage() {
     insights: [],
   };
 
-  const handleGenerateStrategy = async () => {
+  const handleGenerateStrategy = async (
+    answers?: Array<{ question: string; answer: string }>
+  ) => {
     setGenerating(true);
     setGenerateError(null);
     try {
@@ -183,6 +142,7 @@ export default function ResearchPage() {
         body: JSON.stringify({
           ...profile,
           researchResults: results,
+          ...(answers ? { deepDiveAnswers: answers } : deepDiveAnswers ? { deepDiveAnswers } : {}),
         }),
       });
       const data = await res.json();
@@ -200,6 +160,36 @@ export default function ResearchPage() {
     router.push("/strategy/review");
   };
 
+  // Error state
+  if (researchStatus === "error") {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="max-w-md w-full space-y-4 text-center">
+          <div className="mx-auto h-12 w-12 rounded-xl bg-destructive/10 flex items-center justify-center">
+            <Lightbulb className="h-6 w-6 text-destructive" />
+          </div>
+          <h2 className="text-xl font-bold">Research Failed</h2>
+          <p className="text-sm text-muted-foreground">
+            {researchError || "Something went wrong. Please try again."}
+          </p>
+          <Button
+            onClick={() => {
+              fetchCalledRef.current = false;
+              setResearchError(null);
+              setActiveStep(0);
+              activeStepRef.current = 0;
+              setCompletedSteps([]);
+              setResearchStatus("running");
+            }}
+            size="lg"
+          >
+            Retry Research
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // Loading state
   if (researchStatus === "running") {
     return (
@@ -208,7 +198,7 @@ export default function ResearchPage() {
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold">Researching your niche</h2>
             <p className="text-sm text-muted-foreground">
-              This usually takes 1-2 minutes. Sit tight!
+              AI is researching real data about your niche and competitors. This may take 1-2 minutes.
             </p>
           </div>
 
@@ -266,23 +256,41 @@ export default function ResearchPage() {
 
       {/* Competitor Analysis */}
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <Search className="h-5 w-5 text-ig-pink" />
-          Competitor Analysis
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <Search className="h-5 w-5 text-ig-pink" />
+            Competitor Analysis
+          </h2>
+          <span className="text-[10px] text-muted-foreground/60 bg-muted/30 rounded-full px-2.5 py-0.5">
+            Works with public Business &amp; Creator accounts only
+          </span>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {results.competitors.map((comp: any) => (
             <Card key={comp.handle}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-semibold">
-                  @{comp.handle}
+                  {comp.name && comp.name !== comp.handle ? (
+                    <>
+                      {comp.name}{" "}
+                      <span className="text-xs font-normal text-muted-foreground">
+                        @{comp.handle}
+                      </span>
+                    </>
+                  ) : (
+                    <>@{comp.handle}</>
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
                     <p className="text-lg font-bold">
-                      {(comp.followers / 1000).toFixed(1)}K
+                      {comp.followers >= 1_000_000
+                        ? `${(comp.followers / 1_000_000).toFixed(1)}M`
+                        : comp.followers >= 1_000
+                          ? `${(comp.followers / 1_000).toFixed(1)}K`
+                          : comp.followers}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       Followers
@@ -471,33 +479,49 @@ export default function ResearchPage() {
         </div>
       </div>
 
-      {/* CTA */}
-      <div className="flex flex-col items-center gap-3 pt-4 pb-8">
-        <Button
-          onClick={handleGenerateStrategy}
-          disabled={generating}
-          size="lg"
-          className="px-8 gap-2"
-        >
-          {generating ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Generating Strategy...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" />
-              Generate My Strategy
-              <ArrowRight className="h-4 w-4" />
-            </>
+      {/* Deep Dive or CTA */}
+      {showDeepDive && !generating ? (
+        <div className="pt-4 pb-8">
+          <DeepDiveChat
+            discoveryProfile={profile}
+            onComplete={(answers) => {
+              setDeepDiveAnswers(answers);
+              setShowDeepDive(false);
+              handleGenerateStrategy(answers);
+            }}
+            onSkip={() => {
+              setShowDeepDive(false);
+            }}
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col items-center gap-3 pt-4 pb-8">
+          <Button
+            onClick={() => handleGenerateStrategy()}
+            disabled={generating}
+            size="lg"
+            className="px-8 gap-2"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Generating Strategy...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Generate My Strategy
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+          {generateError && (
+            <p className="text-sm text-destructive text-center max-w-md">
+              {generateError}. Please check your AI configuration and try again.
+            </p>
           )}
-        </Button>
-        {generateError && (
-          <p className="text-sm text-destructive text-center max-w-md">
-            {generateError}. Please check your AI configuration and try again.
-          </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

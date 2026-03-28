@@ -33,6 +33,7 @@ export interface BusinessProfile {
 
 export interface CompetitorData {
   handle: string;
+  name?: string;
   followers: number;
   engagementRate: number;
   postingFrequency: string;
@@ -110,6 +111,21 @@ export interface ContentStrategy {
     day60: { followers: string; engagement: string; posts: number };
     day90: { followers: string; engagement: string; posts: number };
   };
+  hookFormulas?: Array<{
+    template: string;
+    example: string;
+    type: string;
+  }>;
+  reelStructures?: Array<{
+    name: string;
+    duration: string;
+    sections: Array<{
+      label: string;
+      duration: string;
+      instruction: string;
+    }>;
+    faceless: boolean;
+  }>;
 }
 
 export interface CalendarSlot {
