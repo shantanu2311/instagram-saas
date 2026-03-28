@@ -87,25 +87,30 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 ### API Routes
 - `POST /api/auth/register` — User registration (bcrypt hash, validates email/name/password, sanitizes name)
 - `GET /api/auth/session` — Auth session
-- `GET /api/studio/drafts` — Returns user's drafts from DB (auth required)
-- `POST /api/studio/generate` — Single content generation + Pillow image gen (auth required)
-- `POST /api/studio/batch-generate` — Batch generation NDJSON stream + images (auth required)
+- `GET /api/studio/drafts` — Returns user's drafts from DB (auth + rate limited)
+- `POST /api/studio/generate` — Single content generation + Pillow image gen (auth + rate limited)
+- `POST /api/studio/batch-generate` — Batch generation NDJSON stream + images (auth + rate limited)
 - `POST /api/studio/repurpose` — Repurpose long-form content into 4 IG formats
 - `POST /api/studio/generate-reel` — Reel script generation (timed scenes, faceless mode)
 - `POST /api/studio/hashtags` — Hashtag research (branded/niche/reach/trending sets)
 - `POST /api/studio/save` — Save draft to DB with ownership check (auth required)
-- `GET /api/brands` — Returns user's brands from DB (auth required)
-- `POST /api/brands` — Create/update brand config from onboarding (auth required)
-- `GET /api/dashboard/stats` — Real KPIs: content counts, recent items, isNewUser (auth required)
-- `POST /api/queue/status` — Sync queue status changes to DB with ownership check (auth required)
-- `GET /api/media/proxy?file=` — Proxies generated images from Python backend (auth required, path traversal protected)
+- `GET /api/brands` — Returns user's brands from DB (auth + rate limited)
+- `POST /api/brands` — Create/update brand config from onboarding (auth + rate limited)
+- `GET /api/dashboard/stats` — Real KPIs: content counts, recent items, isNewUser (auth + rate limited)
+- `POST /api/queue/status` — Sync queue status changes to DB with ownership check (auth + rate limited)
+- `GET /api/media/proxy?file=` — Proxies generated images from Python backend (auth + rate limited, path traversal protected)
 - `POST /api/strategy/research` — AI-powered niche research (Graph API + Claude web search)
 - `POST /api/strategy/generate` — Strategy generation (validates discovery data required, uses research results)
-- `POST /api/strategy/deep-dive` ��� Deep-dive follow-up questions before strategy gen
-- `POST /api/strategy/calendar` ��� Calendar generation (validates strategy data required)
+- `POST /api/strategy/deep-dive` — Deep-dive follow-up questions before strategy gen (auth + rate limited, generate tier)
+- `POST /api/strategy/approve` — Strategy approval (auth + rate limited)
+- `POST /api/strategy/discovery` — Discovery profile save (auth + rate limited)
+- `POST /api/strategy/calendar` — Calendar generation (validates strategy data required)
 - `POST /api/strategy/scrape-website` — Website scraper for business info extraction
-- `POST /api/posts/publish` — Instagram posting (proxies to Python backend)
-- `GET /api/instagram/status` — Instagram connection status + profile info
+- `POST /api/posts/publish` — Instagram posting (auth + rate limited, sanitized errors)
+- `GET /api/instagram/status` — Instagram connection status + profile info (auth + rate limited)
+- `POST /api/instagram/disconnect` — Disconnect Instagram account (auth required)
+- `POST /api/billing/checkout` — Stripe checkout session (auth + rate limited)
+- `GET /api/billing/subscription` — Subscription status (auth + rate limited, uses session userId)
 - `POST /api/calendar/persist` — Bulk upsert calendar slots to DB (auth required, brand ownership check, rate limited)
 - `GET /api/calendar/slots?from=&to=` — Query calendar slots by date range (auth required, rate limited, max 90-day range, requires at least one date bound)
 - `GET /api/calendar/slots/[id]` — Get single slot with linked content (auth required, rate limited)
@@ -230,7 +235,14 @@ Two-tier data source for competitor analysis:
 | ~~Critical~~ | ~~Dashboard flashes new-user state while loading~~ | `dashboard/page.tsx` | **FIXED** — loading skeleton shown until stats arrive |
 | ~~High~~ | ~~No rate limiting on calendar GET/PATCH endpoints~~ | `api/calendar/slots/` | **FIXED** — rate limited (default tier) |
 | ~~High~~ | ~~Unbounded query on calendar slots GET~~ | `api/calendar/slots/route.ts` | **FIXED** — requires date bounds, max 90-day range, 500 row cap |
-| ~~High~~ | ~~Weekly strip date key format mismatch~~ | `weekly-strip.tsx` | **FIXED** — consistent YYYY-MM-DD format, UTC for server dates |
+| ~~High~~ | ~~Weekly strip date key format mismatch~~ | `weekly-strip.tsx` | **FIXED** — consistent YYYY-MM-DD format, local timezone for both keys |
+| ~~High~~ | ~~No auth on billing/checkout, billing/subscription~~ | `api/billing/` | **FIXED** — auth + rate limiting, subscription uses session userId |
+| ~~High~~ | ~~No auth on strategy/approve, deep-dive, discovery~~ | `api/strategy/` | **FIXED** — auth + rate limiting on all three |
+| ~~High~~ | ~~No auth on instagram/disconnect, instagram/status~~ | `api/instagram/` | **FIXED** — auth checks added |
+| ~~High~~ | ~~No rate limiting on brands, drafts, queue/status, dashboard/stats~~ | multiple routes | **FIXED** — rate limited (default tier) |
+| ~~High~~ | ~~Missing skipped/missed status handlers in TodaysContentCard~~ | `todays-content-card.tsx` | **FIXED** — added SkipForward + AlertCircle icons |
+| ~~Medium~~ | ~~No error UI for calendar generation failure~~ | `strategy/review/page.tsx` | **FIXED** — error card + retry button |
+| ~~Medium~~ | ~~Queue preview time parsing accepts invalid hours/minutes~~ | `queue/preview/page.tsx` | **FIXED** — validates hour 1-12, minutes 0-59 |
 | Low | Script tag warnings from framework | Next.js internals | Won't fix |
 
 ## Creator Techniques Integration (from claude-instagram-techniques.docx)
