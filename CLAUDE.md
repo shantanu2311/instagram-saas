@@ -1,8 +1,11 @@
 # CLAUDE.md
 
-## Project: Instagram Creator SaaS
+## Project: Kuraite (formerly IGCreator)
 
 Multi-user SaaS platform for automated Instagram content creation and posting. Generates captions, strategies, calendars, and content queues powered by OpenAI (gpt-4o-mini). The creator configures their brand, approves strategy, then the system generates and posts everything.
+
+**Brand**: Kuraite — operated by Suprajanan (legal pages only). Domain: `kuraite.co.in`
+**Operator**: Suprajanan (only mentioned in Privacy Policy §1 and Terms §11 — nowhere in UI/marketing)
 
 ## Architecture
 
@@ -12,7 +15,8 @@ Multi-user SaaS platform for automated Instagram content creation and posting. G
 - **Database**: PostgreSQL 16 (shared, Next.js via Prisma v7 + `@prisma/adapter-pg`, FastAPI via SQLAlchemy)
 - **Queue**: Celery + Redis 7 (scheduled posting, analytics collection)
 - **Auth**: NextAuth v5 (credentials + Instagram OAuth) — Prisma + bcrypt, proxy.ts route protection
-- **Deployment**: Vercel (auto-deploys from GitHub master)
+- **Deployment**: Vercel (manual `vercel --prod` deploys — GitHub auto-deploy may not trigger)
+- **Domain**: `kuraite.co.in` (Vercel nameservers: ns1.vercel-dns.com, ns2.vercel-dns.com)
 
 ## Build & Run
 
@@ -46,9 +50,11 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `gpt-4o-mini` (FAST_MODEL + DEEP_MODEL) — all generation tasks
 
 **Instagram Graph API Integration:**
-- Token from Meta developer dashboard stored in env vars (dev mode)
-- Instagram Login OAuth flow ready (needs HTTPS for production)
+- Uses **Facebook Login for Business** OAuth (not Instagram Login) — requires `config_id` parameter
+- OAuth callback has fallback chain: `/me/accounts` → `/me?fields=accounts` → direct Page ID query → `/me?fields=instagram_business_account`
+- Direct Page query by known Page ID (`980300588507807`) bypasses empty `/me/accounts` for Business Portfolio-managed Pages
 - `instagram-token.ts` — resolves credentials from cookie (OAuth) or env vars
+- **`business_discovery` requires Advanced Access** for `instagram_basic` — needs Meta App Review
 
 ## Content Pipeline Flow
 
@@ -68,7 +74,10 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 ## Key Routes
 
 ### Pages
-- `/` — Landing page (hero, features, pricing, CTA)
+- `/` — Landing page (hero, features, pricing, CTA) — branded Kuraite with icon
+- `/privacy` — Privacy policy (Meta App Review compliant, mentions Suprajanan)
+- `/terms` — Terms of service (Meta App Review compliant)
+- `/data-deletion` — Data deletion status page (for Meta compliance)
 - `/auth/signin`, `/auth/signup` — Authentication (has client-side validation)
 - `/onboarding` — 4-step brand setup (own layout, no sidebar)
 - `/dashboard` — Home dashboard with getting started checklist + Instagram Sync (Import All)
@@ -117,6 +126,10 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `POST /api/posts/publish` — Instagram posting (auth + rate limited, sanitized errors)
 - `GET /api/instagram/status` — Instagram connection status + profile info (auth + rate limited)
 - `POST /api/instagram/disconnect` — Disconnect Instagram account (auth required)
+- `GET/POST /api/instagram/data-deletion` — Meta data deletion callback (PUBLIC, no auth — returns confirmation_code + status URL)
+- `GET/POST /api/instagram/deauthorize` — Meta deauthorize callback (PUBLIC, no auth)
+- `GET /api/instagram/connect` — OAuth initiation (PUBLIC, no auth — redirects to Facebook Login)
+- `GET /api/instagram/callback` — OAuth callback (PUBLIC, no auth — exchanges code for tokens)
 - `POST /api/billing/checkout` — Stripe checkout session (auth + rate limited)
 - `GET /api/billing/subscription` — Subscription status (auth + rate limited, uses session userId)
 - `POST /api/calendar/persist` — Bulk upsert calendar slots to DB (auth required, brand ownership check, rate limited)
@@ -221,6 +234,7 @@ Dashboard transforms from a one-time strategy tool into a daily habit-forming cr
 ### Next.js 16 Proxy (not Middleware)
 - **Next.js 16 uses `src/proxy.ts` instead of `middleware.ts`** — having both causes build failure. Use `proxy()` export.
 - Proxy checks `authjs.session-token` cookie for auth; returns 401 for API, redirects for pages.
+- **Public API paths bypass auth**: `/api/instagram/data-deletion`, `/api/instagram/deauthorize`, `/api/instagram/callback`, `/api/instagram/connect`, `/api/auth` — these are Meta callbacks and OAuth flows that don't carry session cookies.
 
 ### React 19 + Next.js 16
 - **Framer Motion `AnimatePresence mode="wait"` is BROKEN with React 19** — exit animations never complete, blocking new component mounts. Removed from discovery and onboarding pages. Use plain `<CurrentStep key={step} />` instead.
@@ -259,7 +273,9 @@ This is implemented on: strategy/generate, studio/generate, scrape-website, cale
 - `package.json` has `"build": "prisma generate && next build"` and `"postinstall": "prisma generate"`
 - Requires env vars: `AUTH_SECRET`, `NEXTAUTH_SECRET`, `OPENAI_API_KEY`, `INSTAGRAM_ACCESS_TOKEN` + `INSTAGRAM_BUSINESS_ACCOUNT_ID` (optional, for Graph API competitor analysis)
 - GitHub repo: `shantanu2311/instagram-saas`, branch: `master`
-- Auto-deploys on push to master
+- **GitHub auto-deploy may not trigger** — use `npx vercel --prod` from `frontend/` directory for reliable deploys
+- Production URL: `https://kuraite.co.in` (aliased from Vercel)
+- `NEXTAUTH_URL` on Vercel is set to `https://kuraite.co.in`
 
 ## Competitor Research Architecture
 
@@ -347,11 +363,54 @@ Features built from real creator workflows documented in the techniques report:
 - **Deep-dive chat**: `/api/strategy/deep-dive` returns 3-5 questions; answers are appended to strategy generation prompt
 - **Hashtag sets**: 4 categories (Branded/Niche/Reach/Trending), each tag has reach + competition estimates
 
+## Branding: Kuraite
+
+- App name is **Kuraite** everywhere in UI (landing, sidebar, mobile nav, auth pages, metadata)
+- Icon: `public/kuraite-icon.png` (purple/blue gradient K with constellation dots) + `src/app/icon.png` (favicon)
+- **Suprajanan** only appears in Privacy Policy §1 and Terms §11 — never in UI, marketing, landing page, or footer
+- Contact email in legal pages: `support@suprajanan.com`
+- Zustand store keys NOT renamed (`igcreator-strategy`, `igcreator-queue`) — renaming would clear user localStorage data
+- Footer links (About, Blog, Careers) point to `#` — need real pages or removal before Meta review
+
+## Meta App Review & Facebook Login
+
+### OAuth Flow (Facebook Login for Business)
+- Uses `config_id` parameter (not `scope`) — configurations created in Meta dashboard
+- Config ID stored in `FACEBOOK_LOGIN_CONFIG_ID` env var
+- OAuth callback route: `/api/instagram/callback` — exchanges code for long-lived user token, then gets Page Token + IG Business Account ID
+- Fallback chain for Page discovery: `/me/accounts` → direct Page ID query by known IDs → `/me?fields=instagram_business_account`
+- Known Page ID: `980300588507807` (Decele.app Facebook Page)
+- IG Business Account ID: `17841437050903090`
+
+### Meta App Review Requirements (for Advanced Access to `instagram_basic`)
+- ✅ Privacy Policy at `https://kuraite.co.in/privacy`
+- ✅ Terms of Service at `https://kuraite.co.in/terms`
+- ✅ Data Deletion callback at `https://kuraite.co.in/api/instagram/data-deletion`
+- ✅ Deauthorize callback at `https://kuraite.co.in/api/instagram/deauthorize`
+- ⬜ Business Verification (requires Meta Business Suite)
+- ⬜ Screen recording of app using the permission
+- ⬜ Permission justification text
+- ⬜ Submit App Review
+
+### Meta Dashboard URLs to Configure
+- App Domains: `kuraite.co.in`
+- Privacy Policy URL: `https://kuraite.co.in/privacy`
+- Terms of Service URL: `https://kuraite.co.in/terms`
+- Data Deletion URL: `https://kuraite.co.in/api/instagram/data-deletion`
+- Deauthorize Callback: `https://kuraite.co.in/api/instagram/deauthorize`
+- OAuth Redirect URI: `https://kuraite.co.in/api/instagram/callback`
+
+### Known Meta Issues
+- **`/me/accounts` returns empty** for Pages managed through Business Portfolio — use direct Page ID query fallback
+- **"Feature Unavailable" error** appears after making multiple Meta app config changes — usually resolves in 24h
+- **`business_discovery` error 10** ("Application does not have permission") — requires Advanced Access for `instagram_basic`, which needs full App Review
+- **System User tokens** can't be generated until the app is "installed" on the system user AND assets (Page + IG account) are assigned
+
 ## Environment Variables (frontend/.env)
 
 ```
 DATABASE_URL=postgresql://...
-NEXTAUTH_URL=http://localhost:3002
+NEXTAUTH_URL=http://localhost:3002       # Production: https://kuraite.co.in
 NEXTAUTH_SECRET=...
 AUTH_SECRET=...
 OPENAI_API_KEY=...                      # Required — powers all AI generation (gpt-4o-mini)
@@ -359,13 +418,14 @@ ANTHROPIC_API_KEY=...                   # Optional — not currently used
 
 # Facebook App (for OAuth flow — one app for all users)
 FACEBOOK_APP_ID=...
-FACEBOOK_APP_SECRET=...
+FACEBOOK_APP_SECRET=...                 # Also used to verify signed_request in data-deletion/deauthorize callbacks
+FACEBOOK_LOGIN_CONFIG_ID=...            # Facebook Login for Business configuration ID
 
 # Instagram App (for Instagram Login OAuth — different IDs from Facebook)
 INSTAGRAM_APP_ID=...
 INSTAGRAM_APP_SECRET=...
 
-# Instagram Graph API (dev/testing — token from Meta developer dashboard)
-INSTAGRAM_ACCESS_TOKEN=...              # Generated from developers.facebook.com
-INSTAGRAM_BUSINESS_ACCOUNT_ID=...       # IG Business Account ID (from dashboard)
+# Instagram Graph API (Page Token from Facebook Page linked to IG Business Account)
+INSTAGRAM_ACCESS_TOKEN=...              # Page Token (not User Token) — enables business_discovery API
+INSTAGRAM_BUSINESS_ACCOUNT_ID=...       # IG Business Account ID (17841437050903090)
 ```
