@@ -130,8 +130,34 @@ export function DiscoveryStepCollaterals() {
 
   const handleUpload = useCallback(
     async (files: FileList) => {
-      if (!brandId) {
-        setError("Brand not ready yet. Please wait a moment and try again.");
+      // If no brand yet, try to auto-create one now
+      let bid = brandId;
+      if (!bid) {
+        try {
+          const createRes = await fetch("/api/brands", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              niche: profile.niche || profile.productService || "General",
+              brandHashtag: profile.instagramHandle || profile.businessName || "",
+              primaryColor: profile.primaryColor || "#8b5cf6",
+              secondaryColor: profile.secondaryColor || "#ec4899",
+              accentColor: profile.accentColor || "#f59e0b",
+              fontHeadline: profile.fontHeadline || "Inter",
+              fontBody: profile.fontBody || "Inter",
+            }),
+          });
+          if (createRes.ok) {
+            const data = await createRes.json();
+            bid = data?.id;
+            if (bid) setBrandId(bid);
+          }
+        } catch {
+          // Fall through to error below
+        }
+      }
+      if (!bid) {
+        setError("Could not create brand. Please go back and fill in your business name, then try again.");
         return;
       }
       setError(null);
@@ -144,7 +170,7 @@ export function DiscoveryStepCollaterals() {
         try {
           const formData = new FormData();
           formData.append("file", file);
-          formData.append("brandId", brandId);
+          formData.append("brandId", bid!);
 
           const res = await fetch("/api/collaterals/upload", {
             method: "POST",
