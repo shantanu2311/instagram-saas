@@ -33,8 +33,9 @@ export default function PrivacyPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">1. Introduction</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Kuraite (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;), operated
-            by Decele, based in Delhi, India, provides the Kuraite platform at{" "}
+            Kuraite (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;) is operated
+            by Suprajanan, a registered business based in Jaipur, Rajasthan,
+            India. We provide the Kuraite platform at{" "}
             <span className="text-foreground">
               kuraite.co.in
             </span>
@@ -327,7 +328,7 @@ export default function PrivacyPage() {
             exercise your rights, contact us at:
           </p>
           <p className="text-sm text-foreground">
-            Email: decele573@gmail.com
+            Email: support@suprajanan.com
           </p>
         </section>
       </main>

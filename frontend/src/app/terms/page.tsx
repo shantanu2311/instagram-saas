@@ -33,7 +33,7 @@ export default function TermsPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">1. Service Description</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Kuraite, operated by Decele (based in Delhi, India), is a SaaS platform that provides AI-powered Instagram
+            Kuraite is a SaaS platform that provides AI-powered Instagram
             content creation, strategy generation, competitor analysis,
             scheduling, and publishing tools. The service includes content
             strategy generation, image and caption creation, hashtag research,
@@ -121,7 +121,7 @@ export default function TermsPage() {
           <p className="text-sm text-muted-foreground leading-relaxed">
             You may request deletion of your data at any time by contacting us
             at{" "}
-            <span className="text-foreground">decele573@gmail.com</span> or by
+            <span className="text-foreground">support@suprajanan.com</span> or by
             using the account deletion feature in Settings. Upon receiving a
             deletion request, we will permanently remove all your personal data,
             generated content, and brand information within 30 days. Instagram
@@ -156,10 +156,11 @@ export default function TermsPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">11. Contact</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            For questions about these terms, contact us at:
+            Kuraite is operated by Suprajanan. For questions about these terms,
+            contact us at:
           </p>
           <p className="text-sm text-foreground">
-            Email: decele573@gmail.com
+            Email: support@suprajanan.com
           </p>
         </section>
       </main>

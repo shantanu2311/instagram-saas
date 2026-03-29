@@ -44,7 +44,7 @@ export default function DataDeletionPage() {
           </ul>
           <p className="text-sm text-muted-foreground leading-relaxed">
             If you have any questions about this process, contact us at{" "}
-            <span className="text-foreground">decele573@gmail.com</span>.
+            <span className="text-foreground">support@suprajanan.com</span>.
           </p>
         </div>
       </main>

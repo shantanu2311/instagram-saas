@@ -619,7 +619,7 @@ export default function LandingPage() {
               </li>
               <li>
                 <a
-                  href="mailto:decele573@gmail.com"
+                  href="mailto:support@suprajanan.com"
                   className="hover:text-foreground transition-colors"
                 >
                   Contact Us
