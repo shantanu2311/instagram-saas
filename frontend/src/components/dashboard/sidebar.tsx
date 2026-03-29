@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -49,10 +50,8 @@ export function Sidebar() {
       {/* Logo */}
       <div className="px-4 py-4 border-b border-border/40">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg ig-gradient flex items-center justify-center">
-            <Sparkles className="h-4 w-4 text-white" />
-          </div>
-          <span className="font-semibold">IGCreator</span>
+          <Image src="/kuraite-icon.png" alt="Kuraite" width={32} height={32} className="rounded-lg" />
+          <span className="font-semibold">Kuraite</span>
         </Link>
       </div>
 

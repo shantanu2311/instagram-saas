@@ -2,56 +2,64 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 /**
- * Initiates Instagram Login OAuth flow for Instagram Business Discovery.
+ * Initiates Facebook Login OAuth flow to get a Page Token
+ * that enables Instagram Business Discovery API.
  *
- * Uses the Instagram API with Instagram Login (not Facebook Login).
- * This works directly with Instagram Business/Creator accounts
- * without needing to go through Facebook Pages.
+ * Uses Facebook Login (not Instagram Login) because:
+ * - business_discovery requires a Page Access Token
+ * - Instagram Login tokens don't support business_discovery
  *
- * Required permission:
- *   - instagram_business_basic: read IG Business account info + Business Discovery
+ * Required permissions:
+ *   - pages_read_engagement: access Facebook Pages + business_discovery
+ *   - instagram_basic: read IG Business account linked to the Page
  */
 export async function GET(request: Request) {
-  const appId = process.env.INSTAGRAM_APP_ID || process.env.FACEBOOK_APP_ID;
-  // Use explicit env var, or auto-detect from request origin (works for Vercel + localhost)
+  const appId = process.env.FACEBOOK_APP_ID;
+  const configId = process.env.FACEBOOK_LOGIN_CONFIG_ID; // Facebook Login for Business config ID
+  // Auto-detect redirect URI from request headers (works for Vercel + localhost)
   const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || (() => {
-    // In production (Vercel), use the deployment URL from headers
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
     const proto = request.headers.get("x-forwarded-proto") || "https";
     if (host) return `${proto}://${host}/api/instagram/callback`;
-    // Fallback to parsing request URL
-    const origin = new URL(request.url).origin;
-    return `${origin}/api/instagram/callback`;
+    return `${new URL(request.url).origin}/api/instagram/callback`;
   })();
 
   if (!appId) {
     return NextResponse.json(
-      {
-        error:
-          "Facebook App not configured. Set FACEBOOK_APP_ID in .env",
-      },
+      { error: "Facebook App not configured. Set FACEBOOK_APP_ID in .env" },
       { status: 500 }
     );
   }
 
-  // CSRF protection: generate state token and store in cookie
+  // CSRF protection
   const state = crypto.randomUUID();
   const cookieStore = await cookies();
   cookieStore.set("ig_oauth_state", state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 600, // 10 minutes
+    maxAge: 600,
     path: "/",
   });
 
-  // Instagram Login OAuth URL (direct Instagram auth, not Facebook)
-  const authUrl = new URL("https://www.instagram.com/oauth/authorize");
+  // Facebook Login OAuth URL — gets Page Token for business_discovery
+  const authUrl = new URL("https://www.facebook.com/v21.0/dialog/oauth");
   authUrl.searchParams.set("client_id", appId);
   authUrl.searchParams.set("redirect_uri", redirectUri);
-  authUrl.searchParams.set("scope", "instagram_business_basic");
   authUrl.searchParams.set("response_type", "code");
   authUrl.searchParams.set("state", state);
+
+  if (configId) {
+    // Facebook Login for Business — uses config_id ONLY, no scope parameter
+    authUrl.searchParams.set("config_id", configId);
+    console.log("Using Facebook Login for Business config_id:", configId);
+  } else {
+    // Standard Facebook Login — uses scope parameter
+    authUrl.searchParams.set("scope", "pages_read_engagement,instagram_basic,pages_show_list");
+    console.log("Using standard Facebook Login with scope");
+  }
+
+  console.log("OAuth redirect URL:", authUrl.toString());
 
   return NextResponse.redirect(authUrl.toString());
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -45,10 +46,8 @@ export function MobileNav() {
     <div className="md:hidden border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="flex items-center justify-between px-4 h-14">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg ig-gradient flex items-center justify-center">
-            <Sparkles className="h-3.5 w-3.5 text-white" />
-          </div>
-          <span className="font-semibold text-sm">IGCreator</span>
+          <Image src="/kuraite-icon.png" alt="Kuraite" width={28} height={28} className="rounded-lg" />
+          <span className="font-semibold text-sm">Kuraite</span>
         </Link>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger
@@ -66,10 +65,8 @@ export function MobileNav() {
                   className="flex items-center gap-2"
                   onClick={() => setOpen(false)}
                 >
-                  <div className="h-8 w-8 rounded-lg ig-gradient flex items-center justify-center">
-                    <Sparkles className="h-4 w-4 text-white" />
-                  </div>
-                  <span className="font-semibold">IGCreator</span>
+                  <Image src="/kuraite-icon.png" alt="Kuraite" width={32} height={32} className="rounded-lg" />
+                  <span className="font-semibold">Kuraite</span>
                 </Link>
               </SheetTitle>
             </SheetHeader>

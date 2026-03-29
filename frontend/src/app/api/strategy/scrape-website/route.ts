@@ -107,7 +107,7 @@ export async function POST(request: Request) {
         signal: controller.signal,
         headers: {
           "User-Agent":
-            "Mozilla/5.0 (compatible; IGCreator/1.0; +https://igcreator.app)",
+            "Mozilla/5.0 (compatible; Kuraite/1.0; +https://kuraite.co.in)",
           Accept: "text/html",
         },
       });

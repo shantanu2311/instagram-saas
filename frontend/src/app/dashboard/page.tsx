@@ -271,7 +271,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 space-y-2">
                     <h2 className="text-lg font-semibold">
-                      Welcome to IGCreator
+                      Welcome to Kuraite
                     </h2>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       Let&apos;s get you set up. Start by creating your content

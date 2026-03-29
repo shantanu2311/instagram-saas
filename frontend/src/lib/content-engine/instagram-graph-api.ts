@@ -96,52 +96,62 @@ export async function fetchCompetitorProfile(
     `https://graph.facebook.com/v21.0/${accountId}?fields=business_discovery.username(${cleanHandle}){${fields}}&access_token=${accessToken}`,
     `https://graph.instagram.com/v21.0/${accountId}?fields=business_discovery.username(${cleanHandle}){${fields}}&access_token=${accessToken}`,
   ];
-  let url = urls[0];
 
   try {
-    const res = await fetch(url, {
-      signal: AbortSignal.timeout(15_000),
-    });
+    // Try Facebook Graph API first, then fall back to Instagram Graph API
+    let lastError = "";
+    for (const url of urls) {
+      const res = await fetch(url, {
+        signal: AbortSignal.timeout(15_000),
+      });
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      const errorMsg =
-        (errorData as Record<string, Record<string, string>>)?.error?.message || `HTTP ${res.status}`;
-      console.error(
-        `Instagram Graph API error for @${cleanHandle}:`,
-        errorMsg
-      );
-      return null;
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        lastError =
+          (errorData as Record<string, Record<string, string>>)?.error?.message || `HTTP ${res.status}`;
+        console.warn(
+          `Graph API attempt failed for @${cleanHandle} (${url.includes("graph.facebook") ? "Facebook" : "Instagram"} endpoint):`,
+          lastError
+        );
+        continue; // Try next URL
+      }
+
+      const data = await res.json();
+      const bd = (data as Record<string, Record<string, unknown>>)?.business_discovery;
+      if (!bd) {
+        console.warn(`No business_discovery field in response for @${cleanHandle}`);
+        continue;
+      }
+
+      const mediaEdges = (bd.media as Record<string, unknown>)?.data;
+      const recentMedia: IGMediaItem[] = Array.isArray(mediaEdges)
+        ? mediaEdges.map((m: Record<string, unknown>) => ({
+            id: String(m.id || ""),
+            caption: String(m.caption || ""),
+            timestamp: String(m.timestamp || ""),
+            mediaType: (m.media_type as IGMediaItem["mediaType"]) || "IMAGE",
+            likeCount: Number(m.like_count) || 0,
+            commentsCount: Number(m.comments_count) || 0,
+          }))
+        : [];
+
+      return {
+        handle: cleanHandle,
+        name: String(bd.name || cleanHandle),
+        bio: String(bd.biography || ""),
+        followers: Number(bd.followers_count) || 0,
+        mediaCount: Number(bd.media_count) || 0,
+        website: String(bd.website || ""),
+        isVerified: false, // Not available via Business Discovery
+        profilePicUrl: String(bd.profile_picture_url || ""),
+        recentMedia,
+        dataSource: "graph_api",
+      };
     }
 
-    const data = await res.json();
-    const bd = (data as Record<string, Record<string, unknown>>)?.business_discovery;
-    if (!bd) return null;
-
-    const mediaEdges = (bd.media as Record<string, unknown>)?.data;
-    const recentMedia: IGMediaItem[] = Array.isArray(mediaEdges)
-      ? mediaEdges.map((m: Record<string, unknown>) => ({
-          id: String(m.id || ""),
-          caption: String(m.caption || ""),
-          timestamp: String(m.timestamp || ""),
-          mediaType: (m.media_type as IGMediaItem["mediaType"]) || "IMAGE",
-          likeCount: Number(m.like_count) || 0,
-          commentsCount: Number(m.comments_count) || 0,
-        }))
-      : [];
-
-    return {
-      handle: cleanHandle,
-      name: String(bd.name || cleanHandle),
-      bio: String(bd.biography || ""),
-      followers: Number(bd.followers_count) || 0,
-      mediaCount: Number(bd.media_count) || 0,
-      website: String(bd.website || ""),
-      isVerified: false, // Not available via Business Discovery
-      profilePicUrl: String(bd.profile_picture_url || ""),
-      recentMedia,
-      dataSource: "graph_api",
-    };
+    // All URLs failed
+    console.error(`Instagram Graph API: all endpoints failed for @${cleanHandle}:`, lastError);
+    return null;
   } catch (err) {
     console.error(
       `Failed to fetch @${cleanHandle} from Graph API:`,

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -76,10 +77,8 @@ export default function LandingPage() {
       <nav className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg ig-gradient flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-semibold text-lg">IGCreator</span>
+            <Image src="/kuraite-icon.png" alt="Kuraite" width={32} height={32} className="rounded-lg" />
+            <span className="font-semibold text-lg">Kuraite</span>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/auth/signin">
@@ -495,7 +494,7 @@ export default function LandingPage() {
             Early Access
           </div>
           <h2 className="text-3xl font-bold">
-            Be among the first creators to try IGCreator
+            Be among the first creators to try Kuraite
           </h2>
           <p className="text-muted-foreground max-w-lg mx-auto">
             We&apos;re onboarding creators who want to grow on Instagram with
@@ -548,10 +547,8 @@ export default function LandingPage() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1 space-y-4">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg ig-gradient flex items-center justify-center">
-                <Sparkles className="h-4 w-4 text-white" />
-              </div>
-              <span className="font-semibold">IGCreator</span>
+              <Image src="/kuraite-icon.png" alt="Kuraite" width={32} height={32} className="rounded-lg" />
+              <span className="font-semibold">Kuraite</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               AI-powered Instagram content platform for creators and brands.
@@ -680,7 +677,7 @@ export default function LandingPage() {
         </div>
 
         <div className="max-w-6xl mx-auto mt-8 pt-6 border-t border-border/40 text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} IGCreator. All rights reserved.
+          &copy; {new Date().getFullYear()} Kuraite. All rights reserved.
         </div>
       </footer>
     </div>

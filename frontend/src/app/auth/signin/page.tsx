@@ -62,7 +62,7 @@ export default function SignInPage() {
           </div>
           <h1 className="text-2xl font-bold">Welcome back</h1>
           <p className="text-sm text-muted-foreground">
-            Sign in to your IGCreator account
+            Sign in to your Kuraite account
           </p>
         </div>
 

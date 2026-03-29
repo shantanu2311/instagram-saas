@@ -17,7 +17,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "IGCreator — AI Instagram Content Platform",
+  title: "Kuraite — AI Instagram Content Platform",
   description:
     "Generate, schedule, and post Instagram content with AI. Images, reels, captions — automatically.",
 };
