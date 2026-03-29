@@ -1,8 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,9 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Globe, Palette, User, Shield, CheckCircle2, AlertCircle, Send, Loader2 } from "lucide-react";
-import { useEffect, useCallback } from "react";
 import { PageTransition } from "@/components/page-transition";
-import { useOnboardingStore } from "@/lib/stores/onboarding-store";
 
 export default function SettingsPage() {
   return (
@@ -252,9 +249,9 @@ function SettingsContent() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Complete onboarding to set up your brand identity.
+            Edit your brand identity via strategy discovery.
           </p>
-          <Link href="/onboarding">
+          <Link href="/strategy/discovery">
             <Button size="sm" variant="outline" className="mt-3">
               Edit Brand
             </Button>
@@ -289,22 +286,21 @@ function SettingsContent() {
 }
 
 function PostingPreferenceCard() {
-  const { brand, updateBrand } = useOnboardingStore();
-  const level = brand.automationLevel || "approve-posts";
+  const [level, setLevel] = useState<string>("approve-posts");
 
   const options = [
     {
-      value: "full-control" as const,
+      value: "full-control",
       label: "Full Control",
       description: "Preview design, approve scripts, then approve each post",
     },
     {
-      value: "approve-posts" as const,
+      value: "approve-posts",
       label: "Approve Posts",
       description: "Auto-generate content, review each post before it goes live",
     },
     {
-      value: "full-auto" as const,
+      value: "full-auto",
       label: "Full Auto",
       description: "Generate and post everything automatically per schedule",
     },
@@ -326,7 +322,7 @@ function PostingPreferenceCard() {
           {options.map((opt) => (
             <button
               key={opt.value}
-              onClick={() => updateBrand({ automationLevel: opt.value })}
+              onClick={() => setLevel(opt.value)}
               className={`flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-all ${
                 level === opt.value
                   ? "border-ig-pink bg-ig-pink/10"

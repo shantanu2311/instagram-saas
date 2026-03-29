@@ -53,6 +53,30 @@ async function callOpenAi(opts: CallClaudeOptions): Promise<string> {
   const client = getOpenAiClient();
   const model = opts.model === "deep" ? DEEP_MODEL : FAST_MODEL;
 
+  // Use Responses API with web_search tool when web search is requested
+  if (opts.webSearch) {
+    const response = await client.responses.create({
+      model,
+      max_output_tokens: opts.maxTokens ?? 4096,
+      instructions: opts.system,
+      input: opts.userMessage,
+      tools: [{ type: "web_search_preview" as const }],
+    });
+
+    // Extract text from response output items
+    const textParts: string[] = [];
+    for (const item of response.output) {
+      if (item.type === "message") {
+        for (const content of item.content) {
+          if (content.type === "output_text") {
+            textParts.push(content.text);
+          }
+        }
+      }
+    }
+    return textParts.join("") || "";
+  }
+
   const response = await client.chat.completions.create({
     model,
     max_tokens: opts.maxTokens ?? 4096,
@@ -149,6 +173,7 @@ export interface GenerateStrategyRequest {
   ambition: string;
   monetizationGoal: string;
   instagramHandle: string;
+  collateralContext?: string; // Aggregated text from uploaded business materials
   deepDiveAnswers?: Array<{ question: string; answer: string }>;
   researchResults?: {
     competitors?: Array<{

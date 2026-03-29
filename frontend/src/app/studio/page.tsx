@@ -36,7 +36,7 @@ import { QualityRing } from "@/components/studio/quality-ring";
 import { PageTransition } from "@/components/page-transition";
 import { DraftHistory } from "@/components/studio/draft-history";
 import { useStrategyStore } from "@/lib/stores/strategy-store";
-import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+import { useBrand } from "@/lib/hooks/use-brand";
 import { useQueueStore } from "@/lib/stores/queue-store";
 
 function hexToRgb(hex: string): [number, number, number] | null {
@@ -115,7 +115,7 @@ function StudioContent() {
   const [carouselSlides, setCarouselSlides] = useState<Array<{ headline: string; body: string }>>([]);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const { strategy } = useStrategyStore();
-  const { brand: savedBrand } = useOnboardingStore();
+  const { brand: savedBrand } = useBrand();
   const [result, setResult] = useState<{
     imageUrl: string | null;
     headline: string;
@@ -228,7 +228,7 @@ function StudioContent() {
           generation_tier: tier,
           niche: savedBrand.niche,
           brand_voice: savedBrand.voiceDescription,
-          sample_captions: savedBrand.sampleCaptions?.filter((c: string) => c.trim()) || [],
+          sample_captions: savedBrand.sampleCaption?.split("\n---\n").filter(Boolean) ?? [],
           tone_formality: savedBrand.toneFormality,
           tone_humor: savedBrand.toneHumor,
           content_pillars: savedBrand.contentPillars,
@@ -301,7 +301,7 @@ function StudioContent() {
           niche: savedBrand.niche,
           brand_name: savedBrand.brandHashtag?.replace("#", "") || "",
           brand_voice: savedBrand.voiceDescription,
-          sample_captions: savedBrand.sampleCaptions?.filter((c: string) => c.trim()) || [],
+          sample_captions: savedBrand.sampleCaption?.split("\n---\n").filter(Boolean) ?? [],
           tone_formality: savedBrand.toneFormality,
           tone_humor: savedBrand.toneHumor,
           content_pillars: savedBrand.contentPillars,
@@ -346,7 +346,7 @@ function StudioContent() {
           niche: savedBrand.niche,
           brand_name: savedBrand.brandHashtag?.replace("#", "") || "",
           brand_voice: savedBrand.voiceDescription,
-          sample_captions: savedBrand.sampleCaptions?.filter((c: string) => c.trim()) || [],
+          sample_captions: savedBrand.sampleCaption?.split("\n---\n").filter(Boolean) ?? [],
           tone_formality: savedBrand.toneFormality,
           tone_humor: savedBrand.toneHumor,
           content_pillars: savedBrand.contentPillars,

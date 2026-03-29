@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { generateStrategy } from "@/lib/content-engine";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const limited = rateLimit(request, "generate");
   if (limited) return limited;
+
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let body: any;
@@ -22,6 +30,45 @@ export async function POST(request: Request) {
         { error: "Discovery data is required. Please complete the discovery questionnaire first." },
         { status: 400 }
       );
+    }
+
+    // Fetch collateral context from DB
+    let collateralContext: string | undefined;
+    try {
+      const brand = await prisma.brand.findFirst({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (brand) {
+        const collaterals = await prisma.collateral.findMany({
+          where: {
+            brandId: brand.id,
+            status: "processed",
+            extractedText: { not: null },
+          },
+          select: {
+            filename: true,
+            fileType: true,
+            aiSummary: true,
+            extractedText: true,
+            autoPopulated: true,
+          },
+        });
+
+        if (collaterals.length > 0) {
+          const parts: string[] = [];
+          for (const c of collaterals) {
+            parts.push(`[${c.filename} (${c.fileType})]: ${c.aiSummary || "No summary"}`);
+            // Include truncated extracted text
+            if (c.extractedText) {
+              parts.push(c.extractedText.slice(0, 3000));
+            }
+          }
+          collateralContext = parts.join("\n\n").slice(0, 15_000);
+        }
+      }
+    } catch {
+      // Ignore collateral fetch errors — strategy gen should still work
     }
 
     const strategy = await generateStrategy({
@@ -44,6 +91,7 @@ export async function POST(request: Request) {
       ambition: body.ambition || "",
       monetizationGoal: body.monetizationGoal || "",
       instagramHandle: body.instagramHandle || "",
+      collateralContext,
       deepDiveAnswers: body.deepDiveAnswers || undefined,
       researchResults: body.researchResults || undefined,
     });

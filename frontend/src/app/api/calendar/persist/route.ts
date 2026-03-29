@@ -35,6 +35,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json(
+      { error: "Request body must be a JSON object." },
+      { status: 400 }
+    );
+  }
+
   if (!body.brandId || !Array.isArray(body.slots) || body.slots.length === 0) {
     return NextResponse.json(
       { error: "brandId and non-empty slots array are required." },

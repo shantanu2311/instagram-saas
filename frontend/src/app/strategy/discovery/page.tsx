@@ -9,6 +9,9 @@ import { DiscoveryStepGoals } from "@/components/strategy/discovery-step-goals";
 import { DiscoveryStepContentPrefs } from "@/components/strategy/discovery-step-content-prefs";
 import { DiscoveryStepHistory } from "@/components/strategy/discovery-step-history";
 import { DiscoveryStepPersonality } from "@/components/strategy/discovery-step-personality";
+import { DiscoveryStepBrandIdentity } from "@/components/strategy/discovery-step-brand-identity";
+import { DiscoveryStepVoice } from "@/components/strategy/discovery-step-voice";
+import { DiscoveryStepCollaterals } from "@/components/strategy/discovery-step-collaterals";
 import { DiscoveryStepUsp } from "@/components/strategy/discovery-step-usp";
 import { Sparkles } from "lucide-react";
 
@@ -20,13 +23,16 @@ const steps = [
   { label: "Goals", component: DiscoveryStepGoals },
   { label: "Content", component: DiscoveryStepContentPrefs },
   { label: "Experience", component: DiscoveryStepHistory },
-  { label: "Brand", component: DiscoveryStepPersonality },
+  { label: "Personality", component: DiscoveryStepPersonality },
+  { label: "Brand Look", component: DiscoveryStepBrandIdentity },
+  { label: "Voice", component: DiscoveryStepVoice },
+  { label: "Materials", component: DiscoveryStepCollaterals },
   { label: "USP", component: DiscoveryStepUsp },
 ];
 
 export default function DiscoveryPage() {
   const { discoveryStep, setDiscoveryStep } = useStrategyStore();
-  const CurrentStep = steps[discoveryStep].component;
+  const CurrentStep = steps[discoveryStep]?.component ?? steps[0].component;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -46,7 +52,7 @@ export default function DiscoveryPage() {
                   onClick={() => i < discoveryStep && setDiscoveryStep(i)}
                   disabled={i >= discoveryStep}
                   title={i < discoveryStep ? `Back to ${s.label}` : s.label}
-                  className={`h-2.5 w-2.5 rounded-full transition-colors ${
+                  className={`h-2 w-2 rounded-full transition-colors ${
                     i === discoveryStep
                       ? "bg-ig-pink ring-2 ring-ig-pink/30"
                       : i < discoveryStep
@@ -56,7 +62,7 @@ export default function DiscoveryPage() {
                 />
                 {i < steps.length - 1 && (
                   <div
-                    className={`h-px w-2 sm:w-4 transition-colors ${
+                    className={`h-px w-1.5 sm:w-3 transition-colors ${
                       i < discoveryStep ? "bg-ig-pink" : "bg-muted"
                     }`}
                   />
@@ -65,7 +71,7 @@ export default function DiscoveryPage() {
             ))}
           </div>
           <span className="text-xs text-muted-foreground">
-            Step {discoveryStep + 1} of {steps.length}
+            {discoveryStep + 1}/{steps.length}
           </span>
         </div>
       </div>

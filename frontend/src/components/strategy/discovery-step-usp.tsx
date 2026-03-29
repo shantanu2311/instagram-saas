@@ -39,12 +39,53 @@ export function DiscoveryStepUsp() {
   const handleStartResearch = async () => {
     setSubmitting(true);
     try {
-      // Save discovery profile
-      await fetch("/api/strategy/discovery", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      });
+      // Create or update brand in DB with all collected profile data
+      let brandId: string | null = null;
+      try {
+        const brandPayload = {
+          niche: profile.niche || profile.productService || "General",
+          primaryColor: profile.primaryColor,
+          secondaryColor: profile.secondaryColor,
+          accentColor: profile.accentColor,
+          fontHeadline: profile.fontHeadline,
+          fontBody: profile.fontBody,
+          logoUrl: profile.logoUrl || undefined,
+          toneFormality: profile.toneFormality,
+          toneHumor: profile.toneHumor,
+          voiceDescription: profile.voiceDescription || undefined,
+          sampleCaption: profile.sampleCaptions.filter(Boolean).join("\n---\n") || undefined,
+          brandHashtag: profile.brandHashtag || profile.businessName.replace(/\s+/g, "") || undefined,
+        };
+
+        const brandRes = await fetch("/api/brands", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(brandPayload),
+        });
+        if (brandRes.ok) {
+          const brandData = await brandRes.json();
+          brandId = brandData?.id || null;
+        }
+
+        // Fallback: fetch existing brand
+        if (!brandId) {
+          const brandsRes = await fetch("/api/brands");
+          if (brandsRes.ok) {
+            const brandsData = await brandsRes.json();
+            const brandsArr = Array.isArray(brandsData) ? brandsData : brandsData?.brands;
+            brandId = brandsArr?.[0]?.id || null;
+          }
+        }
+      } catch {}
+
+      // Save discovery profile to DB
+      if (brandId) {
+        await fetch("/api/strategy/discovery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ brandId, profile }),
+        }).catch(() => {});
+      }
 
       // Start async research
       setResearchStatus("running");

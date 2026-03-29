@@ -10,6 +10,7 @@ export interface BusinessProfile {
   businessName: string; // Also used as creator name / personal name
   businessDescription: string; // Also: what you create / what you're about
   productService: string; // Also: niche/expertise / interests
+  niche: string; // Industry/niche category
   websiteUrl: string;
   // Creator/personal-specific
   instagramHandle: string;
@@ -29,6 +30,21 @@ export interface BusinessProfile {
   keyDifferentiators: string[];
   painPoints: string[];
   brandPersonality: string[];
+  // Brand identity (visual)
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  textColor: string;
+  fontHeadline: string;
+  fontBody: string;
+  logoUrl: string;
+  // Brand voice
+  toneFormality: number; // 0=casual, 100=formal
+  toneHumor: number; // 0=serious, 100=playful
+  voiceDescription: string;
+  sampleCaptions: string[];
+  brandHashtag: string;
 }
 
 export interface CompetitorData {
@@ -176,6 +192,7 @@ const defaultProfile: BusinessProfile = {
   businessName: "",
   businessDescription: "",
   productService: "",
+  niche: "",
   websiteUrl: "",
   instagramHandle: "",
   ambition: "",
@@ -194,6 +211,21 @@ const defaultProfile: BusinessProfile = {
   keyDifferentiators: [],
   painPoints: [],
   brandPersonality: [],
+  // Brand identity defaults
+  primaryColor: "#8b5cf6",
+  secondaryColor: "#ec4899",
+  accentColor: "#f59e0b",
+  backgroundColor: "#ffffff",
+  textColor: "#1a1a1a",
+  fontHeadline: "Inter",
+  fontBody: "Inter",
+  logoUrl: "",
+  // Brand voice defaults
+  toneFormality: 50,
+  toneHumor: 50,
+  voiceDescription: "",
+  sampleCaptions: [],
+  brandHashtag: "",
 };
 
 export const useStrategyStore = create<StrategyState>()(
@@ -209,7 +241,7 @@ export const useStrategyStore = create<StrategyState>()(
 
       setDiscoveryStep: (step) => set({ discoveryStep: step }),
       nextDiscoveryStep: () =>
-        set((s) => ({ discoveryStep: Math.min(s.discoveryStep + 1, 8) })),
+        set((s) => ({ discoveryStep: Math.min(s.discoveryStep + 1, 11) })),
       prevDiscoveryStep: () =>
         set((s) => ({ discoveryStep: Math.max(s.discoveryStep - 1, 0) })),
       updateProfile: (updates) =>
@@ -263,6 +295,14 @@ export const useStrategyStore = create<StrategyState>()(
             sessionStorage.removeItem(name);
           }
         },
+      },
+      merge: (persisted, current) => {
+        const state = persisted as Partial<StrategyState>;
+        return {
+          ...current,
+          ...state,
+          profile: { ...(current as StrategyState).profile, ...state?.profile },
+        };
       },
     }
   )

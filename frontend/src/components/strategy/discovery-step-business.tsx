@@ -7,6 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Building2, Mic2, User, Globe, Loader2, Sparkles } from "lucide-react";
 
+const nicheOptions = [
+  "Fitness & Health",
+  "Food & Cooking",
+  "Fashion & Style",
+  "Tech & Gadgets",
+  "Travel",
+  "Beauty & Skincare",
+  "Education",
+  "Finance & Business",
+  "Entertainment",
+  "Art & Design",
+  "Lifestyle",
+  "Other",
+];
+
 const fieldConfig = {
   business: {
     icon: Building2,
@@ -228,6 +243,26 @@ export function DiscoveryStepBusiness() {
               rows={2}
               className={textareaClass}
             />
+          </div>
+
+          {/* Niche picker */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Niche / Industry</label>
+            <div className="flex flex-wrap gap-1.5">
+              {nicheOptions.map((n) => (
+                <button
+                  key={n}
+                  onClick={() => updateProfile({ niche: n })}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition-all ${
+                    profile.niche === n
+                      ? "border-ig-pink bg-ig-pink/10 text-ig-pink"
+                      : "border-border/40 text-muted-foreground hover:border-ig-pink/40"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
           </div>
 
           {config.showHandle && (

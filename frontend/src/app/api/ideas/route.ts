@@ -58,7 +58,19 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json(
+      { error: "Request body must be a JSON object." },
+      { status: 400 }
+    );
+  }
+
   if (!body.title?.trim())
+    return NextResponse.json({ error: "Title is required" }, { status: 400 });
+
+  // Strip null bytes that PostgreSQL cannot store
+  const sanitizedTitle = String(body.title).replace(/\0/g, "").trim().slice(0, 200);
+  if (!sanitizedTitle)
     return NextResponse.json({ error: "Title is required" }, { status: 400 });
 
   const brand = await prisma.brand.findFirst({
@@ -74,14 +86,14 @@ export async function POST(request: Request) {
   const idea = await prisma.contentIdea.create({
     data: {
       brandId: brand.id,
-      title: body.title.trim().slice(0, 200),
-      description: body.description || null,
-      sourceUrl: body.sourceUrl || null,
+      title: sanitizedTitle,
+      description: body.description ? String(body.description).replace(/\0/g, "") : null,
+      sourceUrl: body.sourceUrl ? String(body.sourceUrl).replace(/\0/g, "") : null,
       sourceType: body.sourceType || "manual",
       contentType: body.contentType || null,
       pillar: body.pillar || null,
       tags: Array.isArray(body.tags) ? body.tags : [],
-      notes: body.notes || null,
+      notes: body.notes ? String(body.notes).replace(/\0/g, "") : null,
     },
   });
   return NextResponse.json(idea);

@@ -11,10 +11,18 @@ import { cookies } from "next/headers";
  * Required permission:
  *   - instagram_business_basic: read IG Business account info + Business Discovery
  */
-export async function GET() {
+export async function GET(request: Request) {
   const appId = process.env.INSTAGRAM_APP_ID || process.env.FACEBOOK_APP_ID;
-  // Instagram Login requires HTTPS redirect URIs, even for localhost
-  const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || "https://localhost:3002/api/instagram/callback";
+  // Use explicit env var, or auto-detect from request origin (works for Vercel + localhost)
+  const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || (() => {
+    // In production (Vercel), use the deployment URL from headers
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+    const proto = request.headers.get("x-forwarded-proto") || "https";
+    if (host) return `${proto}://${host}/api/instagram/callback`;
+    // Fallback to parsing request URL
+    const origin = new URL(request.url).origin;
+    return `${origin}/api/instagram/callback`;
+  })();
 
   if (!appId) {
     return NextResponse.json(

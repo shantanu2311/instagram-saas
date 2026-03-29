@@ -39,6 +39,7 @@ interface QueueState {
   approveAll: () => void;
   setBatchProgress: (progress: BatchProgress | null) => void;
   clearPosted: () => void;
+  resetStuck: () => void;
   reset: () => void;
 }
 
@@ -87,6 +88,16 @@ export const useQueueStore = create<QueueState>()(
       clearPosted: () =>
         set((s) => ({
           items: s.items.filter((i) => i.status !== "posted"),
+        })),
+
+      resetStuck: () =>
+        set((s) => ({
+          items: s.items.map((i) =>
+            i.status === "generating"
+              ? { ...i, status: "failed" as const, error: "Generation interrupted — retry from Strategy." }
+              : i
+          ),
+          batchProgress: s.batchProgress ? { ...s.batchProgress, inProgress: false } : null,
         })),
 
       reset: () => set({ items: [], batchProgress: null }),

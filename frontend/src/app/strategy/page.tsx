@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useStrategyStore } from "@/lib/stores/strategy-store";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,15 +15,81 @@ import {
   Pencil,
   Target,
   Sparkles,
-  ArrowRight,
-  Clock,
   CheckCircle2,
   Circle,
+  Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function StrategyPage() {
-  const { strategy, calendar } = useStrategyStore();
+  const { strategy: zustandStrategy, setStrategy, calendar: zustandCalendar, setCalendar } = useStrategyStore();
+  const [loading, setLoading] = useState(true);
+  const [dbStrategy, setDbStrategy] = useState<any>(undefined); // undefined = not yet fetched, null = fetched but empty
+  const [dbCalendarSlots, setDbCalendarSlots] = useState<any[]>([]);
+
+  // Load strategy and calendar from DB on mount
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadFromDB() {
+      try {
+        // Fetch brand first
+        const brandsRes = await fetch("/api/brands");
+        if (!brandsRes.ok) { if (mounted) { setDbStrategy(null); setLoading(false); } return; }
+        const brandsData = await brandsRes.json();
+        const brandsArr = Array.isArray(brandsData) ? brandsData : brandsData?.brands;
+        const brand = brandsArr?.[0];
+        if (!brand?.id) { if (mounted) { setDbStrategy(null); setLoading(false); } return; }
+
+        // Fetch strategy from DB
+        const [strategyRes, calendarRes] = await Promise.all([
+          fetch("/api/strategy/discovery?includeStrategy=true"),
+          fetch(`/api/calendar/slots?from=${getMonthStart()}&to=${getMonthEnd()}`),
+        ]);
+
+        if (mounted && strategyRes.ok) {
+          const stratData = await strategyRes.json();
+          // DB is source of truth — set to the value (or null if no strategy)
+          setDbStrategy(stratData?.strategy || null);
+          // Sync Zustand with DB data so other pages are correct for this user
+          if (stratData?.strategy) {
+            setStrategy(stratData.strategy);
+          }
+        }
+
+        if (mounted && calendarRes.ok) {
+          const calData = await calendarRes.json();
+          if (calData?.slots?.length) {
+            setDbCalendarSlots(calData.slots);
+          }
+        }
+      } catch {
+        // DB fetch failed — treat as no strategy (don't show stale Zustand data from another user)
+        if (mounted) setDbStrategy(null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    loadFromDB();
+    return () => { mounted = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // DB is source of truth once fetched (dbStrategy !== undefined means we've checked the DB)
+  // Only fall back to Zustand if DB fetch hasn't completed yet (dbStrategy === undefined)
+  const strategy = dbStrategy !== undefined ? dbStrategy : zustandStrategy;
+  const upcomingSlots = dbCalendarSlots.length > 0
+    ? dbCalendarSlots.slice(0, 4)
+    : (dbStrategy !== undefined ? [] : (zustandCalendar?.slots?.slice(0, 4) ?? []));
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!strategy) {
     return (
@@ -42,7 +109,7 @@ export default function StrategyPage() {
                   Set Up Your Content Strategy
                 </h1>
                 <p className="text-muted-foreground max-w-sm mx-auto">
-                  Answer a few questions about your business, and we'll research
+                  Answer a few questions about your business, and we&apos;ll research
                   your niche, analyze competitors, and build a custom content
                   strategy with a full posting calendar.
                 </p>
@@ -86,8 +153,6 @@ export default function StrategyPage() {
     : [];
 
   const trendInsights: { title: string; category: string }[] = [];
-
-  const upcomingSlots = calendar?.slots?.slice(0, 4) ?? [];
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">
@@ -141,7 +206,7 @@ export default function StrategyPage() {
                 className="flex items-center gap-3 text-sm"
               >
                 <span className="text-xs font-medium text-muted-foreground w-8">
-                  {slot.day ?? slot.dayOfWeek}
+                  {slot.day ?? slot.dayOfWeek ?? formatDay(slot.date)}
                 </span>
                 <div className="h-2 w-2 rounded-full bg-ig-pink" />
                 <span className="text-xs text-muted-foreground">
@@ -220,7 +285,7 @@ export default function StrategyPage() {
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
-        <Link href="/strategy/calendar">
+        <Link href="/dashboard/calendar">
           <Button variant="outline" size="sm" className="gap-1.5">
             <Calendar className="h-3.5 w-3.5" />
             View Full Calendar
@@ -248,4 +313,24 @@ export default function StrategyPage() {
       </div>
     </div>
   );
+}
+
+function getMonthStart(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+}
+
+function getMonthEnd(): string {
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+}
+
+function formatDay(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getDay()] || "";
+  } catch {
+    return "";
+  }
 }

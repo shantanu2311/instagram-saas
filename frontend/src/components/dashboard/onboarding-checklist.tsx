@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Circle, ArrowRight } from "lucide-react";
-import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+import { useBrand } from "@/lib/hooks/use-brand";
 import { useStrategyStore } from "@/lib/stores/strategy-store";
 
 interface Step {
@@ -13,14 +13,13 @@ interface Step {
 }
 
 export function OnboardingChecklist() {
-  const { brand } = useOnboardingStore();
+  const { hasBrand } = useBrand();
   const { strategy } = useStrategyStore();
 
   const steps: Step[] = [
     { label: "Create account", done: true, href: "#" },
     { label: "Connect Instagram", done: false, href: "/settings" },
-    { label: "Set up brand", done: !!brand.niche, href: "/onboarding" },
-    { label: "Create strategy", done: !!strategy, href: "/strategy" },
+    { label: "Set up brand & strategy", done: hasBrand && !!strategy, href: "/strategy/discovery" },
     { label: "Create first post", done: false, href: "/studio" },
   ];
 

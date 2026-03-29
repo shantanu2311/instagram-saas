@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageTransition } from "@/components/page-transition";
 import { useQueueStore, type QueueItem } from "@/lib/stores/queue-store";
-import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+import { useBrand } from "@/lib/hooks/use-brand";
 import {
   CheckCircle2,
   XCircle,
@@ -22,6 +22,8 @@ import {
   AlertCircle,
   Replace,
   Pencil,
+  ArrowLeft,
+  LayoutDashboard,
 } from "lucide-react";
 
 const contentTypeIcons = {
@@ -192,9 +194,9 @@ function QueueItemCard({
 
 export default function QueuePage() {
   const router = useRouter();
-  const { items, approveItem, rejectItem, approveAll, batchProgress, clearPosted } =
+  const { items, approveItem, rejectItem, approveAll, batchProgress, clearPosted, resetStuck, reset } =
     useQueueStore();
-  const { brand } = useOnboardingStore();
+  const { brand } = useBrand();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [posting, setPosting] = useState<string | null>(null);
 
@@ -269,11 +271,22 @@ export default function QueuePage() {
       <div className="p-6 space-y-6 max-w-3xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Content Queue</h1>
-            <p className="text-sm text-muted-foreground">
-              Review and approve generated content before posting.
-            </p>
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 w-8 p-0"
+              onClick={() => router.push("/dashboard")}
+              title="Back to Dashboard"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">Content Queue</h1>
+              <p className="text-sm text-muted-foreground">
+                Review and approve generated content before posting.
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
             {pendingItems.length > 0 && (
@@ -321,11 +334,17 @@ export default function QueuePage() {
               <Sparkles className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
               <h3 className="text-sm font-medium mb-1">No content in queue</h3>
               <p className="text-xs text-muted-foreground mb-4">
-                Create a strategy and generate your content calendar to fill the queue.
+                Create content from your daily calendar or head to the Studio.
               </p>
-              <Button size="sm" onClick={() => router.push("/strategy")}>
-                Go to Strategy
-              </Button>
+              <div className="flex items-center justify-center gap-3">
+                <Button size="sm" onClick={() => router.push("/dashboard")}>
+                  <LayoutDashboard className="h-4 w-4 mr-1.5" />
+                  Dashboard
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => router.push("/studio")}>
+                  Create in Studio
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -333,9 +352,33 @@ export default function QueuePage() {
         {/* Generating */}
         {generatingItems.length > 0 && (
           <div className="space-y-2">
-            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Generating ({generatingItems.length})
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Generating ({generatingItems.length})
+              </h2>
+              {!batchProgress?.inProgress && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    onClick={resetStuck}
+                  >
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Mark as Failed
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs text-red-500 hover:text-red-600"
+                    onClick={reset}
+                  >
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Clear All
+                  </Button>
+                </div>
+              )}
+            </div>
             {generatingItems.map((item) => (
               <QueueItemCard
                 key={item.id}

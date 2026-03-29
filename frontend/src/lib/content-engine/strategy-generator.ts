@@ -114,6 +114,10 @@ CONTENT PREFERENCES: ${req.contentPreferences.join(", ")}
 PAIN POINTS: ${req.painPoints.join(", ")}
 BRAND PERSONALITY: ${req.brandPersonality.join(", ")}
 POSTING HISTORY: ${req.postingHistory || "New to Instagram"}${
+    req.collateralContext
+      ? `\n\nBUSINESS MATERIALS (uploaded documents with extracted info):\n${req.collateralContext}`
+      : ""
+  }${
     req.researchResults
       ? `\n\nRESEARCH FINDINGS (use these to inform your strategy):
 ${req.researchResults.competitors && req.researchResults.competitors.length > 0

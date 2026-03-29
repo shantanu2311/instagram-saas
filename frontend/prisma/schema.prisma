@@ -144,8 +144,11 @@ model Brand {
   mediaAssets   MediaAsset[]
   products      Product[]
   moments       BrandMoment[]
-  weeklyBriefs  WeeklyBrief[]
-  ideas         ContentIdea[]
+  weeklyBriefs     WeeklyBrief[]
+  ideas            ContentIdea[]
+  strategy         Strategy?
+  discoveryProfile DiscoveryProfile?
+  collaterals      Collateral[]
 
   @@index([userId])
 }
@@ -231,6 +234,35 @@ model AccountSnapshot {
 
   @@index([igAccountId])
   @@index([snapshotDate])
+}
+
+// ─── Strategy ─────────────────────────────────────────────────
+
+model Strategy {
+  id        String   @id @default(cuid())
+  brandId   String   @unique
+  data      Json     // Full ContentStrategy object
+  status    String   @default("active") // "active" | "archived"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
+}
+
+// ─── Discovery Profile ────────────────────────────────────────
+
+model DiscoveryProfile {
+  id        String   @id @default(cuid())
+  brandId   String   @unique
+  data      Json     // Full BusinessProfile object from discovery wizard
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
 }
 
 // ─── Calendar ─────────────────────────────────────────────────
@@ -346,6 +378,29 @@ model WeeklyBrief {
 
   @@unique([brandId, weekStartDate])
   @@index([brandId])
+}
+
+// ─── Collaterals (Business Materials) ─────────────────────────
+
+model Collateral {
+  id            String   @id @default(cuid())
+  brandId       String
+  filename      String
+  url           String   @db.Text // File storage path or data URL
+  mimeType      String
+  sizeBytes     Int
+  fileType      String   // "pdf" | "spreadsheet" | "document" | "image" | "link" | "other"
+  status        String   @default("pending") // "pending" | "processing" | "processed" | "failed"
+  extractedText String?  @db.Text
+  aiSummary     String?  @db.Text
+  autoPopulated Json?    // { products: [...], moments: [...], inspiration: [...], mediaLibrary: [...] }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  @@index([brandId])
+  @@index([status])
 }
 
 // ─── Content Inspiration Inbox ──────────────────────────────

@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { PageTransition } from "@/components/page-transition";
 import { useStrategyStore } from "@/lib/stores/strategy-store";
-import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+import { useBrand } from "@/lib/hooks/use-brand";
 
 interface HashtagTag {
   tag: string;
@@ -65,7 +65,7 @@ export default function HashtagExplorerPage() {
   const [copied, setCopied] = useState(false);
 
   const { strategy } = useStrategyStore();
-  const { brand: savedBrand } = useOnboardingStore();
+  const { brand: savedBrand } = useBrand();
 
   const handleResearch = async () => {
     setResearching(true);

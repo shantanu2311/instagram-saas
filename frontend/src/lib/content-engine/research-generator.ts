@@ -42,11 +42,19 @@ Your job is to:
 3. Generate actionable insights based on the REAL competitor data.
 ${failedHandles.length > 0 ? `\nNote: The following handles could not be fetched via Graph API (they may be personal/private accounts): ${failedHandles.map(h => "@" + h).join(", ")}. Use web search to find what data you can about them.` : ""}`;
   } else {
-    dataContext = `No Instagram Graph API data is available. Use your web search tool to research the competitors and find real data about them.
+    dataContext = `No Instagram Graph API data is available. You MUST use your web_search tool to research each competitor individually.
 
-Search for each competitor's Instagram profile to find their actual follower count, content type, and engagement patterns. Use sources like SocialBlade, news articles, brand websites, and social media reports.
+For each competitor handle:
+1. Search for "[handle] instagram followers" or "[handle] instagram" to find their real follower count
+2. Search for "[handle] socialblade" or "[brand name] instagram engagement" for engagement data
+3. Look at actual search results — use numbers you find in the search results, NOT estimates
 
-Be transparent about data accuracy — mark what you found via search vs what you estimated.`;
+CRITICAL RULES:
+- NEVER make up follower counts. If you cannot find the real number via web search, set followers to 0 and dataSource to "estimated"
+- NEVER invent engagement rates. If you can't find real data, set engagementRate to 0 and mark as "estimated"
+- Round follower counts from search results (e.g., if SocialBlade says 361,245 → use 361245)
+- For posting frequency, check their recent post dates from search results
+- Mark each competitor's dataSource as "web_search" if you found real data, or "estimated" if you couldn't find it`;
   }
 
   return `You are an expert Instagram growth strategist and competitive analyst.

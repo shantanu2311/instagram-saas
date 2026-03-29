@@ -16,7 +16,10 @@ export async function GET(request: Request) {
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
   const state = url.searchParams.get("state");
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3002";
+  // Auto-detect base URL from request (works for Vercel + localhost)
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+  const proto = request.headers.get("x-forwarded-proto") || "https";
+  const baseUrl = host ? `${proto}://${host}` : (process.env.NEXTAUTH_URL || "http://localhost:3002");
 
   // Check for errors
   if (error || !code) {
@@ -39,8 +42,13 @@ export async function GET(request: Request) {
 
   const appId = process.env.INSTAGRAM_APP_ID || process.env.FACEBOOK_APP_ID || "";
   const appSecret = process.env.INSTAGRAM_APP_SECRET || process.env.FACEBOOK_APP_SECRET || "";
-  // Must match exactly what's registered in Instagram Login settings
-  const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || "https://localhost:3002/api/instagram/callback";
+  // Must match exactly what connect route sent — auto-detect from request headers
+  const redirectUri = process.env.INSTAGRAM_REDIRECT_URI || (() => {
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+    const proto = request.headers.get("x-forwarded-proto") || "https";
+    if (host) return `${proto}://${host}/api/instagram/callback`;
+    return `${new URL(request.url).origin}/api/instagram/callback`;
+  })();
 
   try {
     // Step 1: Exchange code for short-lived Instagram Access Token

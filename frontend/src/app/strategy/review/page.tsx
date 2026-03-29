@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useStrategyStore } from "@/lib/stores/strategy-store";
-import { useOnboardingStore } from "@/lib/stores/onboarding-store";
-import { useQueueStore } from "@/lib/stores/queue-store";
+import { useBrand } from "@/lib/hooks/use-brand";
+// Queue store no longer needed — batch generation removed in favor of daily per-item creation
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,29 +19,15 @@ import {
   Hash,
   Film,
   Rocket,
-  Trophy,
   Loader2,
   Sparkles,
-  Zap,
-  Clapperboard,
-  ChevronDown,
-  ChevronUp,
-  EyeOff,
+  RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 type SectionStatus = "pending" | "approved" | "rejected";
 
-function convertTimeToISO(time: string): string {
-  const match = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-  if (!match) return "07:30:00";
-  let hours = parseInt(match[1]);
-  const minutes = match[2];
-  const period = match[3].toUpperCase();
-  if (period === "PM" && hours < 12) hours += 12;
-  if (period === "AM" && hours === 12) hours = 0;
-  return `${hours.toString().padStart(2, "0")}:${minutes}:00`;
-}
+// convertTimeToISO removed — no longer needed without batch generation
 
 const sectionDefs = [
   { key: "brandPositioning", label: "Brand Positioning", icon: Target },
@@ -56,10 +42,26 @@ const sectionDefs = [
 export default function ReviewPage() {
   const router = useRouter();
   const { strategy, setStrategy, setCalendar } = useStrategyStore();
-  const { brand: savedBrand } = useOnboardingStore();
+  const { brand: savedBrand } = useBrand();
   const [sections, setSections] = useState<Record<string, SectionStatus>>({});
   const [approving, setApproving] = useState(false);
   const [calendarError, setCalendarError] = useState<string | null>(null);
+  const [brandId, setBrandId] = useState<string | null>(null);
+  const [sectionFeedback, setSectionFeedback] = useState<Record<string, string>>({});
+  const [revisingSection, setRevisingSection] = useState<string | null>(null);
+  const [revisionError, setRevisionError] = useState<Record<string, string>>({});
+  const [revisionCount, setRevisionCount] = useState<Record<string, number>>({});
+
+  // Fetch brandId from DB for calendar persistence
+  useEffect(() => {
+    fetch("/api/brands")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        const arr = Array.isArray(data) ? data : data?.brands;
+        if (arr?.[0]?.id) setBrandId(arr[0].id);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!strategy) {
@@ -92,19 +94,77 @@ export default function ReviewPage() {
     setSections(updated);
   };
 
-  const handleGenerateCalendar = async () => {
-    setApproving(true);
-    const queueStore = useQueueStore.getState();
+  const updateFeedback = (key: string, value: string) => {
+    setSectionFeedback((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const MAX_REVISIONS = 5;
+
+  const handleReviseSection = async (sectionKey: string) => {
+    const feedback = sectionFeedback[sectionKey]?.trim();
+    if (!feedback) return;
+
+    const count = revisionCount[sectionKey] || 0;
+    if (count >= MAX_REVISIONS) {
+      setRevisionError((prev) => ({
+        ...prev,
+        [sectionKey]: `You've used all ${MAX_REVISIONS} revisions for this section. Please approve it or edit manually in Settings later.`,
+      }));
+      return;
+    }
+
+    setRevisingSection(sectionKey);
+    setRevisionError((prev) => ({ ...prev, [sectionKey]: "" }));
 
     try {
-      // Approve strategy
-      await fetch("/api/strategy/approve", {
-        method: "PUT",
+      const res = await fetch("/api/strategy/revise-section", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ strategyId: strategy.id, sections }),
-      }).catch(() => {}); // Non-critical if approve endpoint isn't wired
+        body: JSON.stringify({
+          sectionKey,
+          currentContent: strategy[sectionKey as keyof typeof strategy],
+          feedback,
+          brandContext: { niche: savedBrand.niche, brandName: savedBrand.brandHashtag },
+        }),
+      });
 
-      // Build brand context for batch generation
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Revision failed" }));
+        throw new Error(err.error || "Revision failed");
+      }
+
+      const data = await res.json();
+      // Update strategy in Zustand store with revised section
+      setStrategy({ ...strategy, [sectionKey]: data.revised });
+      // Increment revision count
+      setRevisionCount((prev) => ({ ...prev, [sectionKey]: count + 1 }));
+      // Reset feedback and set section back to pending for re-review
+      setSectionFeedback((prev) => ({ ...prev, [sectionKey]: "" }));
+      setSections((prev) => ({ ...prev, [sectionKey]: "pending" }));
+    } catch (err) {
+      setRevisionError((prev) => ({
+        ...prev,
+        [sectionKey]: err instanceof Error ? err.message : "Revision failed. Try again.",
+      }));
+    } finally {
+      setRevisingSection(null);
+    }
+  };
+
+  const handleGenerateCalendar = async () => {
+    setApproving(true);
+
+    try {
+      // Persist strategy to DB
+      if (brandId) {
+        await fetch("/api/strategy/approve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ brandId, strategy }),
+        }).catch(() => {}); // Non-fatal — strategy still lives in Zustand
+      }
+
+      // Build brand context for calendar generation
       const brandContext = {
         niche: savedBrand.niche,
         brandName: savedBrand.brandHashtag?.replace("#", "") || "",
@@ -114,7 +174,7 @@ export default function ReviewPage() {
         toneFormality: savedBrand.toneFormality,
         toneHumor: savedBrand.toneHumor,
         voiceDescription: savedBrand.voiceDescription,
-        sampleCaptions: savedBrand.sampleCaptions?.filter((c: string) => c.trim()) || [],
+        sampleCaptions: savedBrand.sampleCaption?.split("\n---\n").filter(Boolean) ?? [],
         contentPillars: savedBrand.contentPillars,
         brandHashtag: savedBrand.brandHashtag,
       };
@@ -126,7 +186,8 @@ export default function ReviewPage() {
         brandPositioning: strategy.brandPositioning,
       };
 
-      // Generate calendar with full context
+      // Generate calendar (metadata only — topics, pillars, types, headlines)
+      // No caption/hashtag generation happens here. That's done per-item when the user creates content.
       const res = await fetch("/api/strategy/calendar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -135,139 +196,26 @@ export default function ReviewPage() {
           ...brandContext,
           postsPerWeek: savedBrand.postsPerWeek || 5,
           strategy: strategyContext,
+          ...(brandId ? { brandId } : {}),
         }),
       });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Calendar generation failed" }));
+        throw new Error(err.error || "Calendar generation failed");
+      }
+
       const calendarData = await res.json();
       setCalendar(calendarData);
 
-      // Check automation level
-      const autoLevel = savedBrand.automationLevel || "approve-posts";
-
-      // Full-control: go to design preview first (no batch gen yet)
-      if (autoLevel === "full-control") {
-        setApproving(false);
-        router.push("/queue/preview");
-        return;
-      }
-
-      // Approve-posts or full-auto: start batch content generation
-      const slots = calendarData.slots || [];
-      if (slots.length > 0) {
-        // Add placeholder queue items for each slot
-        for (const slot of slots) {
-          queueStore.addItem({
-            id: `q-${slot.date}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            calendarSlotDate: slot.date,
-            pillar: slot.pillar,
-            contentType: slot.contentType || "image",
-            topic: slot.topic,
-            headline: slot.headline || slot.topic,
-            caption: "",
-            hashtags: [],
-            qualityScore: 0,
-            suggestedTime: slot.suggestedTime || "7:30 AM",
-            status: "generating",
-            createdAt: new Date().toISOString(),
-            scheduledFor: `${slot.date}T${slot.suggestedTime ? convertTimeToISO(slot.suggestedTime) : "07:30:00"}`,
-          });
-        }
-
-        queueStore.setBatchProgress({
-          total: slots.length,
-          completed: 0,
-          failed: 0,
-          inProgress: true,
-        });
-
-        // Navigate to queue immediately — generation happens in background
-        setApproving(false);
-        router.push("/queue");
-
-        // Stream batch generation results
-        const batchRes = await fetch("/api/studio/batch-generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            slots,
-            brand: brandContext,
-            strategy: strategyContext,
-          }),
-        });
-
-        const reader = batchRes.body?.getReader();
-        const decoder = new TextDecoder();
-        const queueItems = queueStore.items.filter((i) => i.status === "generating");
-        let completed = 0;
-        let failed = 0;
-
-        if (reader) {
-          let buffer = "";
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-
-            // Process complete NDJSON lines
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              if (!line.trim()) continue;
-              try {
-                const result = JSON.parse(line);
-                const qItem = queueItems[result.index];
-                if (!qItem) continue;
-
-                const autoLevel = savedBrand.automationLevel || "approve-posts";
-                const newStatus =
-                  result.status === "success"
-                    ? autoLevel === "full-auto"
-                      ? ("approved" as const)
-                      : ("pending_approval" as const)
-                    : ("failed" as const);
-
-                useQueueStore.getState().updateItem(qItem.id, {
-                  headline: result.headline || qItem.headline,
-                  caption: result.caption || "",
-                  hashtags: result.hashtags || [],
-                  qualityScore: result.qualityScore || 0,
-                  status: newStatus,
-                  error: result.error,
-                });
-
-                if (result.status === "success") completed++;
-                else failed++;
-
-                useQueueStore.getState().setBatchProgress({
-                  total: slots.length,
-                  completed: completed + failed,
-                  failed,
-                  inProgress: completed + failed < slots.length,
-                });
-              } catch {
-                // Skip malformed lines
-              }
-            }
-          }
-        }
-
-        useQueueStore.getState().setBatchProgress({
-          total: slots.length,
-          completed: completed + failed,
-          failed,
-          inProgress: false,
-        });
-
-        return; // Already navigated
-      }
+      setApproving(false);
+      // Navigate to calendar view — user will create content daily from their dashboard
+      router.push("/dashboard/calendar");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Calendar generation failed. Please try again.";
       setCalendarError(msg);
       setApproving(false);
-      return;
     }
-    setApproving(false);
-    router.push("/strategy/calendar");
   };
 
   const pillarColors = [
@@ -323,6 +271,13 @@ export default function ReviewPage() {
         icon={Target}
         status={sections.brandPositioning}
         onToggle={toggleSection}
+        feedback={sectionFeedback.brandPositioning || ""}
+        onFeedbackChange={updateFeedback}
+        onRevise={handleReviseSection}
+        isRevising={revisingSection === "brandPositioning"}
+        revisionError={revisionError.brandPositioning}
+        revisionsUsed={revisionCount.brandPositioning || 0}
+        maxRevisions={MAX_REVISIONS}
       >
         <p className="text-sm">{strategy.brandPositioning?.summary}</p>
         <div className="flex flex-wrap gap-1.5 mt-2">
@@ -344,6 +299,13 @@ export default function ReviewPage() {
         icon={Layout}
         status={sections.contentPillars}
         onToggle={toggleSection}
+        feedback={sectionFeedback.contentPillars || ""}
+        onFeedbackChange={updateFeedback}
+        onRevise={handleReviseSection}
+        isRevising={revisingSection === "contentPillars"}
+        revisionError={revisionError.contentPillars}
+        revisionsUsed={revisionCount.contentPillars || 0}
+        maxRevisions={MAX_REVISIONS}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {strategy.contentPillars?.map((pillar: any, i: number) => (
@@ -378,6 +340,13 @@ export default function ReviewPage() {
         icon={Clock}
         status={sections.postingCadence}
         onToggle={toggleSection}
+        feedback={sectionFeedback.postingCadence || ""}
+        onFeedbackChange={updateFeedback}
+        onRevise={handleReviseSection}
+        isRevising={revisingSection === "postingCadence"}
+        revisionError={revisionError.postingCadence}
+        revisionsUsed={revisionCount.postingCadence || 0}
+        maxRevisions={MAX_REVISIONS}
       >
         <div className="space-y-3">
           <p className="text-sm">
@@ -422,6 +391,13 @@ export default function ReviewPage() {
         icon={MessageSquare}
         status={sections.toneAndVoice}
         onToggle={toggleSection}
+        feedback={sectionFeedback.toneAndVoice || ""}
+        onFeedbackChange={updateFeedback}
+        onRevise={handleReviseSection}
+        isRevising={revisingSection === "toneAndVoice"}
+        revisionError={revisionError.toneAndVoice}
+        revisionsUsed={revisionCount.toneAndVoice || 0}
+        maxRevisions={MAX_REVISIONS}
       >
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -477,6 +453,13 @@ export default function ReviewPage() {
         icon={Hash}
         status={sections.hashtagStrategy}
         onToggle={toggleSection}
+        feedback={sectionFeedback.hashtagStrategy || ""}
+        onFeedbackChange={updateFeedback}
+        onRevise={handleReviseSection}
+        isRevising={revisingSection === "hashtagStrategy"}
+        revisionError={revisionError.hashtagStrategy}
+        revisionsUsed={revisionCount.hashtagStrategy || 0}
+        maxRevisions={MAX_REVISIONS}
       >
         <div className="space-y-3">
           {(
@@ -512,6 +495,13 @@ export default function ReviewPage() {
         icon={Film}
         status={sections.contentFormats}
         onToggle={toggleSection}
+        feedback={sectionFeedback.contentFormats || ""}
+        onFeedbackChange={updateFeedback}
+        onRevise={handleReviseSection}
+        isRevising={revisingSection === "contentFormats"}
+        revisionError={revisionError.contentFormats}
+        revisionsUsed={revisionCount.contentFormats || 0}
+        maxRevisions={MAX_REVISIONS}
       >
         <div className="space-y-2">
           <div className="flex h-4 rounded-full overflow-hidden">
@@ -558,6 +548,13 @@ export default function ReviewPage() {
         icon={Rocket}
         status={sections.growthTactics}
         onToggle={toggleSection}
+        feedback={sectionFeedback.growthTactics || ""}
+        onFeedbackChange={updateFeedback}
+        onRevise={handleReviseSection}
+        isRevising={revisingSection === "growthTactics"}
+        revisionError={revisionError.growthTactics}
+        revisionsUsed={revisionCount.growthTactics || 0}
+        maxRevisions={MAX_REVISIONS}
       >
         <div className="space-y-2">
           {strategy.growthTactics?.map((tactic: any) => (
@@ -586,98 +583,6 @@ export default function ReviewPage() {
         </div>
       </SectionCard>
 
-      {/* Hook Formula Bank */}
-      {strategy.hookFormulas && strategy.hookFormulas.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Zap className="h-4 w-4 text-ig-pink" />
-              Hook Formula Bank
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {strategy.hookFormulas.map((hook: any, i: number) => (
-                <div
-                  key={i}
-                  className="rounded-lg border border-border/40 p-3 space-y-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] bg-ig-pink/10 text-ig-pink"
-                    >
-                      {hook.type}
-                    </Badge>
-                  </div>
-                  <p className="text-sm font-medium">{hook.template}</p>
-                  <p className="text-xs text-muted-foreground italic">
-                    &ldquo;{hook.example}&rdquo;
-                  </p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Reel Structures */}
-      {strategy.reelStructures && strategy.reelStructures.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Clapperboard className="h-4 w-4 text-ig-pink" />
-              Reel Structures
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {strategy.reelStructures.map((reel: any, i: number) => (
-                <ReelStructureCard key={i} reel={reel} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Milestones */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-ig-pink" />
-            Milestones
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-3">
-            {(
-              [
-                ["30 Days", strategy.milestones?.day30],
-                ["60 Days", strategy.milestones?.day60],
-                ["90 Days", strategy.milestones?.day90],
-              ] as [string, any][]
-            ).map(([label, data]) => (
-              <div
-                key={label}
-                className="rounded-lg border border-border/40 p-3 text-center space-y-1"
-              >
-                <p className="text-xs font-medium text-muted-foreground">
-                  {label}
-                </p>
-                <p className="text-lg font-bold">{data?.followers}</p>
-                <p className="text-[10px] text-muted-foreground">followers</p>
-                <p className="text-xs">
-                  {data?.engagement} engagement
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  {data?.posts} posts target
-                </p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Calendar generation error */}
       {calendarError && (
         <div className="mx-auto max-w-lg rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-center">
@@ -687,7 +592,12 @@ export default function ReviewPage() {
       )}
 
       {/* Approve & Generate */}
-      <div className="flex justify-center pt-4 pb-8">
+      <div className="flex flex-col items-center gap-3 pt-4 pb-8">
+        {!allApproved && (
+          <p className="text-xs text-muted-foreground">
+            Approve all {totalSections} sections to continue, or click the pencil icon to request changes.
+          </p>
+        )}
         <Button
           onClick={() => { setCalendarError(null); handleGenerateCalendar(); }}
           disabled={!allApproved || approving}
@@ -702,7 +612,7 @@ export default function ReviewPage() {
           ) : (
             <>
               <Sparkles className="h-4 w-4" />
-              {calendarError ? "Retry Calendar Generation" : "Approve All & Generate Calendar"}
+              {calendarError ? "Retry Calendar Generation" : "Generate Content Calendar"}
             </>
           )}
         </Button>
@@ -717,6 +627,13 @@ function SectionCard({
   icon: Icon,
   status,
   onToggle,
+  feedback,
+  onFeedbackChange,
+  onRevise,
+  isRevising,
+  revisionError,
+  revisionsUsed,
+  maxRevisions,
   children,
 }: {
   sectionKey: string;
@@ -724,8 +641,16 @@ function SectionCard({
   icon: any;
   status: SectionStatus;
   onToggle: (key: string, status: SectionStatus) => void;
+  feedback: string;
+  onFeedbackChange: (key: string, value: string) => void;
+  onRevise: (key: string) => void;
+  isRevising: boolean;
+  revisionError?: string;
+  revisionsUsed: number;
+  maxRevisions: number;
   children: React.ReactNode;
 }) {
+  const revisionsLeft = maxRevisions - revisionsUsed;
   return (
     <Card
       className={
@@ -744,7 +669,7 @@ function SectionCard({
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           )}
           {status === "rejected" && (
-            <XCircle className="h-4 w-4 text-red-500" />
+            <Pencil className="h-4 w-4 text-amber-500" />
           )}
         </CardTitle>
         <div className="flex gap-1.5">
@@ -764,60 +689,68 @@ function SectionCard({
             variant={status === "rejected" ? "destructive" : "outline"}
             size="xs"
             onClick={() => onToggle(sectionKey, "rejected")}
+            title="Request changes"
           >
-            <XCircle className="h-3 w-3" />
+            <Pencil className="h-3 w-3" />
           </Button>
         </div>
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent>
+        {children}
+
+        {/* Feedback & Revision UI — shown when section is rejected */}
+        {status === "rejected" && (
+          <div className="mt-4 pt-4 border-t border-border/40 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-amber-500">
+                Tell the AI what to change
+              </p>
+              <span className={`text-[10px] font-medium ${revisionsLeft <= 1 ? "text-red-400" : "text-muted-foreground"}`}>
+                {revisionsLeft} of {maxRevisions} revisions left
+              </span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Be specific — e.g. &ldquo;Change posting frequency to 3x/week&rdquo; or &ldquo;Remove the Product Highlights pillar and split its % among the others.&rdquo; The AI will regenerate only this section.
+            </p>
+            <textarea
+              value={feedback}
+              onChange={(e) => onFeedbackChange(sectionKey, e.target.value)}
+              placeholder="Describe what you want changed, or say 'completely regenerate this section'..."
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm min-h-[80px] focus:outline-none focus:ring-2 focus:ring-ig-pink/30 resize-none"
+              disabled={isRevising || revisionsLeft <= 0}
+            />
+            {revisionError && (
+              <p className="text-xs text-red-500">{revisionError}</p>
+            )}
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => onRevise(sectionKey)}
+                disabled={isRevising || !feedback.trim() || revisionsLeft <= 0}
+                className="gap-1.5"
+              >
+                {isRevising ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+                {isRevising ? "Revising..." : "Regenerate Section"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onToggle(sectionKey, "approved")}
+                disabled={isRevising}
+                className="text-xs"
+              >
+                Approve As-Is
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 }
 
-function ReelStructureCard({ reel }: { reel: any }) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div className="rounded-lg border border-border/40 p-3 space-y-2">
-      <button
-        className="w-full flex items-center justify-between text-left"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">{reel.name}</span>
-          <Badge variant="secondary" className="text-[10px]">
-            {reel.duration}
-          </Badge>
-          {reel.faceless && (
-            <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-              <EyeOff className="h-3 w-3" />
-              Faceless
-            </span>
-          )}
-        </div>
-        {expanded ? (
-          <ChevronUp className="h-4 w-4 text-muted-foreground" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        )}
-      </button>
-      {expanded && (
-        <div className="space-y-1.5 pt-1">
-          {reel.sections?.map((section: any, j: number) => (
-            <div
-              key={j}
-              className="flex items-start gap-3 text-xs rounded-md bg-muted/50 px-3 py-2"
-            >
-              <span className="font-mono text-[10px] text-muted-foreground shrink-0 w-16">
-                {section.duration}
-              </span>
-              <span className="font-medium shrink-0 w-14">{section.label}</span>
-              <span className="text-muted-foreground">{section.instruction}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 

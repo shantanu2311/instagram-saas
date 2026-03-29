@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
-
-export async function PUT(request: Request) {
+export async function POST(request: Request) {
   const limited = rateLimit(request, "default");
   if (limited) return limited;
 
@@ -13,29 +12,61 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let body: { brandId?: string; strategy?: any };
   try {
-    const body = await request.json();
-    const res = await fetch(`${BACKEND_URL}/strategy/${body.strategyId}/approve`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      console.error("Approve backend error:", res.status, error);
-      return NextResponse.json(
-        { error: "Failed to approve strategy. Please try again." },
-        { status: res.status }
-      );
-    }
-
-    const data = await res.json();
-    return NextResponse.json(data);
+    body = await request.json();
   } catch {
     return NextResponse.json(
-      { error: "Strategy service unavailable. Please try again later." },
-      { status: 503 }
+      { error: "Request body is required." },
+      { status: 400 }
+    );
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json(
+      { error: "Request body must be a JSON object." },
+      { status: 400 }
+    );
+  }
+
+  const { brandId, strategy } = body;
+  if (!brandId || !strategy) {
+    return NextResponse.json(
+      { error: "brandId and strategy are required." },
+      { status: 400 }
+    );
+  }
+
+  try {
+    // Verify brand ownership
+    const brand = await prisma.brand.findFirst({
+      where: { id: brandId, userId: session.user.id },
+    });
+    if (!brand) {
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
+    }
+
+    // Upsert strategy (one per brand)
+    const saved = await prisma.strategy.upsert({
+      where: { brandId },
+      create: {
+        brandId,
+        data: strategy,
+        status: "active",
+      },
+      update: {
+        data: strategy,
+        status: "active",
+      },
+    });
+
+    return NextResponse.json({ id: saved.id, status: "approved" });
+  } catch (err) {
+    console.error("Strategy approve error:", err);
+    return NextResponse.json(
+      { error: "Failed to save strategy." },
+      { status: 500 }
     );
   }
 }

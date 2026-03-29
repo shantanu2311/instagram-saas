@@ -27,8 +27,26 @@ export async function GET(request: NextRequest) {
   }
 
   const dateFilter: Record<string, Date> = {};
-  if (from) dateFilter.gte = new Date(from);
-  if (to) dateFilter.lte = new Date(to);
+  if (from) {
+    const d = new Date(from);
+    if (isNaN(d.getTime())) {
+      return NextResponse.json(
+        { error: "'from' is not a valid date." },
+        { status: 400 }
+      );
+    }
+    dateFilter.gte = d;
+  }
+  if (to) {
+    const d = new Date(to);
+    if (isNaN(d.getTime())) {
+      return NextResponse.json(
+        { error: "'to' is not a valid date." },
+        { status: 400 }
+      );
+    }
+    dateFilter.lte = d;
+  }
 
   // Enforce max range of 90 days
   if (dateFilter.gte && dateFilter.lte) {

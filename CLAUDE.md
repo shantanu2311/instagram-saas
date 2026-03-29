@@ -54,7 +54,7 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 
 ```
 1. Onboarding → Brand setup (niche, colors, fonts, voice, pillars) — 4 steps
-2. Strategy Discovery → 9-step wizard (type, business, audience, competitors, goals, content, experience, brand, USP)
+2. Strategy Discovery → 10-step wizard (type, business, audience, competitors, goals, content, experience, brand, materials, USP)
 3. Strategy Research → Simulated research animation → "Generate My Strategy" button
 4. Strategy Generation → Claude generates 7-section strategy
 5. Strategy Review → User approves each section
@@ -81,7 +81,7 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `/dashboard/moments` — Brand moments (launches, events, milestones)
 - `/dashboard/calendar` — Calendar view
 - `/strategy` — Strategy hub
-- `/strategy/discovery` — 9-step discovery wizard (clickable step dots for back-navigation)
+- `/strategy/discovery` — 10-step discovery wizard (clickable step dots for back-navigation, includes materials upload)
 - `/strategy/research` — Research simulation + strategy generation
 - `/strategy/review` — Section-by-section approval
 - `/strategy/calendar` — Monthly calendar view (redirects to /strategy if no strategy)
@@ -131,6 +131,11 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `PATCH /api/ideas/[id]` — Update idea (auth + ownership check)
 - `DELETE /api/ideas/[id]` — Delete idea (auth + ownership check)
 - `POST /api/strategy/insights` — AI strategy recommendations from current strategy + performance data (auth + rate limited, generate tier)
+- `POST /api/collaterals/upload` — Upload business material (FormData: file + brandId, max 10MB, auth + rate limited)
+- `POST /api/collaterals/process` — AI analysis of uploaded collateral (extracts products, moments, ideas; auth + generate rate limit)
+- `GET /api/collaterals` — List user's collaterals (auth + rate limited)
+- `DELETE /api/collaterals/[id]` — Delete collateral (auth + ownership check)
+- `GET /api/collaterals/context` — Aggregated context from all processed collaterals for strategy generation
 
 ## Data Persistence (Prisma → PostgreSQL)
 
@@ -140,6 +145,8 @@ All routes now use real Prisma queries instead of stubs:
 - **Studio Save**: `POST /api/studio/save` creates/updates `GeneratedContent`; `GET /api/studio/drafts` returns drafts
 - **Dashboard**: `GET /api/dashboard/stats` returns real KPIs (content counts, recent items)
 - **Calendar**: `POST /api/calendar/persist` upserts slots (unique on brandId+date); `GET /api/calendar/slots` queries by date range (bounded, max 90 days); auto-persists on calendar generation if authenticated + brandId verified as owned
+- **Strategy**: `POST /api/strategy/approve` upserts `Strategy` (one per brand, stores full strategy JSON); `POST /api/strategy/discovery` upserts `DiscoveryProfile` (stores discovery wizard data); `GET /api/strategy/discovery` fetches saved profile
+- **Calendar persistence**: Review page now passes `brandId` to `/api/strategy/calendar`, enabling auto-persist to CalendarSlot table on generation
 - **Queue Status**: `POST /api/queue/status` syncs approve/reject/publish status to DB
 - **Image Gen**: `POST /api/studio/generate` calls backend Pillow generator, proxied via `/api/media/proxy`
 - **Prisma v7**: Requires `@prisma/adapter-pg` with `pg.Pool` — see `src/lib/db.ts`
@@ -308,6 +315,13 @@ Two-tier data source for competitor analysis:
 | ~~High~~ | ~~Missing skipped/missed status handlers in TodaysContentCard~~ | `todays-content-card.tsx` | **FIXED** — added SkipForward + AlertCircle icons |
 | ~~Medium~~ | ~~No error UI for calendar generation failure~~ | `strategy/review/page.tsx` | **FIXED** — error card + retry button |
 | ~~Medium~~ | ~~Queue preview time parsing accepts invalid hours/minutes~~ | `queue/preview/page.tsx` | **FIXED** — validates hour 1-12, minutes 0-59 |
+| ~~Critical~~ | ~~Calendar slots never persisted to DB (persistCalendar never called)~~ | `strategy/review/page.tsx` | **FIXED** — review page now passes brandId to calendar API, enabling auto-persist |
+| ~~Critical~~ | ~~Strategy not persisted to DB (no Strategy model)~~ | `prisma/schema.prisma` | **FIXED** — added Strategy + DiscoveryProfile models; strategy saved on approval |
+| ~~High~~ | ~~Discovery route proxies to Python backend~~ | `api/strategy/discovery/route.ts` | **FIXED** — saves to DiscoveryProfile table in PostgreSQL |
+| ~~High~~ | ~~Approve route proxies to Python backend (dead code)~~ | `api/strategy/approve/route.ts` | **FIXED** — upserts Strategy to PostgreSQL |
+| ~~Medium~~ | ~~JSON null body crashes calendar/persist, strategy/approve, strategy/discovery, ideas~~ | multiple POST routes | **FIXED** — null/type guard after `request.json()` parse |
+| ~~Medium~~ | ~~Invalid dates in calendar/slots query cause Prisma error → 500~~ | `api/calendar/slots/route.ts` | **FIXED** — validates `new Date()` result with `isNaN()` before querying |
+| ~~Medium~~ | ~~Null bytes in ideas title crash PostgreSQL insert~~ | `api/ideas/route.ts` | **FIXED** — strips `\0` from title and text fields before DB write |
 | Low | Script tag warnings from framework | Next.js internals | Won't fix |
 
 ## Creator Techniques Integration (from claude-instagram-techniques.docx)

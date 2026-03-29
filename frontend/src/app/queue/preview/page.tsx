@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageTransition } from "@/components/page-transition";
 import { IPhoneMockup } from "@/components/landing/iphone-mockup";
 import { useStrategyStore } from "@/lib/stores/strategy-store";
-import { useOnboardingStore } from "@/lib/stores/onboarding-store";
+import { useBrand } from "@/lib/hooks/use-brand";
 import { useQueueStore } from "@/lib/stores/queue-store";
 import {
   CheckCircle2,
@@ -33,7 +33,7 @@ interface SamplePost {
 export default function DesignPreviewPage() {
   const router = useRouter();
   const { strategy, calendar } = useStrategyStore();
-  const { brand: savedBrand } = useOnboardingStore();
+  const { brand: savedBrand } = useBrand();
   const [samples, setSamples] = useState<SamplePost[]>([]);
   const [loading, setLoading] = useState(true);
   const [approved, setApproved] = useState(false);
@@ -136,7 +136,7 @@ export default function DesignPreviewPage() {
       toneFormality: savedBrand.toneFormality,
       toneHumor: savedBrand.toneHumor,
       voiceDescription: savedBrand.voiceDescription,
-      sampleCaptions: savedBrand.sampleCaptions?.filter((c: string) => c.trim()) || [],
+      sampleCaptions: savedBrand.sampleCaption?.split("\n---\n").filter(Boolean) ?? [],
       contentPillars: savedBrand.contentPillars,
       brandHashtag: savedBrand.brandHashtag,
     };
@@ -251,8 +251,22 @@ export default function DesignPreviewPage() {
         failed,
         inProgress: false,
       });
-    } catch {
-      // Batch gen failed — items stay as "generating"
+    } catch (err) {
+      // Batch gen failed — mark all generating items as failed so they don't stay stuck
+      console.error("Batch generation failed:", err);
+      const stuck = useQueueStore.getState().items.filter((i) => i.status === "generating");
+      for (const item of stuck) {
+        useQueueStore.getState().updateItem(item.id, {
+          status: "failed",
+          error: "Generation failed — try again from Strategy.",
+        });
+      }
+      useQueueStore.getState().setBatchProgress({
+        total: slots.length,
+        completed: 0,
+        failed: slots.length,
+        inProgress: false,
+      });
     }
   };
 
