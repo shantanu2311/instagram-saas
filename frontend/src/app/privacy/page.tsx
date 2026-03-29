@@ -33,8 +33,8 @@ export default function PrivacyPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">1. Introduction</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Kuraite (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;) operates
-            the Kuraite platform at{" "}
+            Kuraite (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;), operated
+            by Decele, based in Delhi, India, provides the Kuraite platform at{" "}
             <span className="text-foreground">
               kuraite.co.in
             </span>

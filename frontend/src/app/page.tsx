@@ -605,41 +605,25 @@ export default function LandingPage() {
             </ul>
           </div>
 
-          {/* Company */}
+          {/* Support */}
           <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Company</h4>
+            <h4 className="text-sm font-semibold">Support</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
                 <Link
-                  href="#"
+                  href="/data-deletion"
                   className="hover:text-foreground transition-colors"
                 >
-                  About
+                  Data Deletion
                 </Link>
               </li>
               <li>
-                <Link
-                  href="#"
+                <a
+                  href="mailto:decele573@gmail.com"
                   className="hover:text-foreground transition-colors"
                 >
-                  Blog
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-foreground transition-colors"
-                >
-                  Careers
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="#"
-                  className="hover:text-foreground transition-colors"
-                >
-                  Contact
-                </Link>
+                  Contact Us
+                </a>
               </li>
             </ul>
           </div>

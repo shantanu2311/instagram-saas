@@ -33,7 +33,7 @@ export default function TermsPage() {
         <section className="space-y-4">
           <h2 className="text-xl font-semibold">1. Service Description</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Kuraite is a SaaS platform that provides AI-powered Instagram
+            Kuraite, operated by Decele (based in Delhi, India), is a SaaS platform that provides AI-powered Instagram
             content creation, strategy generation, competitor analysis,
             scheduling, and publishing tools. The service includes content
             strategy generation, image and caption creation, hashtag research,
