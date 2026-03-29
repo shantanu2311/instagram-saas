@@ -89,7 +89,14 @@ export async function fetchCompetitorProfile(
     "media.limit(25){id,caption,timestamp,media_type,like_count,comments_count}",
   ].join(",");
 
-  const url = `https://graph.instagram.com/v21.0/${accountId}?fields=business_discovery.username(${cleanHandle}){${fields}}&access_token=${accessToken}`;
+  // Try Facebook Graph API first (works with Facebook Login tokens / Page tokens),
+  // then fall back to Instagram Graph API (works with Instagram Login tokens).
+  // business_discovery requires a token with pages_read_engagement or instagram_business_basic scope.
+  const urls = [
+    `https://graph.facebook.com/v21.0/${accountId}?fields=business_discovery.username(${cleanHandle}){${fields}}&access_token=${accessToken}`,
+    `https://graph.instagram.com/v21.0/${accountId}?fields=business_discovery.username(${cleanHandle}){${fields}}&access_token=${accessToken}`,
+  ];
+  let url = urls[0];
 
   try {
     const res = await fetch(url, {

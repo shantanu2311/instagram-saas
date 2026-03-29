@@ -286,25 +286,33 @@ export default function ResearchPage() {
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
                     <p className="text-lg font-bold">
-                      {comp.followers >= 1_000_000
-                        ? `${(comp.followers / 1_000_000).toFixed(1)}M`
-                        : comp.followers >= 1_000
-                          ? `${(comp.followers / 1_000).toFixed(1)}K`
-                          : comp.followers}
+                      {comp.followers > 0
+                        ? comp.followers >= 1_000_000
+                          ? `${(comp.followers / 1_000_000).toFixed(1)}M`
+                          : comp.followers >= 1_000
+                            ? `${(comp.followers / 1_000).toFixed(1)}K`
+                            : comp.followers
+                        : <span className="text-muted-foreground text-sm">—</span>}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       Followers
                     </p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold">{comp.engagementRate}%</p>
+                    <p className="text-lg font-bold">
+                      {comp.engagementRate > 0
+                        ? `${comp.engagementRate}%`
+                        : <span className="text-muted-foreground text-sm">—</span>}
+                    </p>
                     <p className="text-[10px] text-muted-foreground">
                       Engagement
                     </p>
                   </div>
                   <div>
                     <p className="text-lg font-bold">
-                      {comp.postingFrequency}
+                      {comp.postingFrequency
+                        ? comp.postingFrequency
+                        : <span className="text-muted-foreground text-sm">—</span>}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
                       Frequency
@@ -312,56 +320,70 @@ export default function ResearchPage() {
                   </div>
                 </div>
 
-                {/* Content type bar */}
-                <div className="flex h-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-ig-pink"
-                    style={{ width: `${comp.topContentTypes.reels}%` }}
-                  />
-                  <div
-                    className="bg-blue-500"
-                    style={{ width: `${comp.topContentTypes.carousels}%` }}
-                  />
-                  <div
-                    className="bg-ig-orange"
-                    style={{ width: `${comp.topContentTypes.images}%` }}
-                  />
-                </div>
-                <div className="flex gap-3 text-[10px] text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-ig-pink" />
-                    Reels
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                    Carousels
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-ig-orange" />
-                    Images
-                  </span>
-                </div>
+                {/* Content type bar — only show if we have real data */}
+                {comp.topContentTypes && (comp.topContentTypes.reels > 0 || comp.topContentTypes.carousels > 0 || comp.topContentTypes.images > 0) && (
+                  <>
+                    <div className="flex h-2 rounded-full overflow-hidden">
+                      <div
+                        className="bg-ig-pink"
+                        style={{ width: `${comp.topContentTypes.reels}%` }}
+                      />
+                      <div
+                        className="bg-blue-500"
+                        style={{ width: `${comp.topContentTypes.carousels}%` }}
+                      />
+                      <div
+                        className="bg-ig-orange"
+                        style={{ width: `${comp.topContentTypes.images}%` }}
+                      />
+                    </div>
+                    <div className="flex gap-3 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-ig-pink" />
+                        Reels {comp.topContentTypes.reels}%
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                        Carousels {comp.topContentTypes.carousels}%
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 rounded-full bg-ig-orange" />
+                        Images {comp.topContentTypes.images}%
+                      </span>
+                    </div>
+                  </>
+                )}
 
-                <div className="flex flex-wrap gap-1.5">
-                  {comp.strengths.map((s: string) => (
-                    <span
-                      key={s}
-                      className="inline-flex items-center rounded-full bg-emerald-500/10 text-emerald-600 px-2 py-0.5 text-[10px]"
-                    >
-                      <ThumbsUp className="h-2.5 w-2.5 mr-1" />
-                      {s}
-                    </span>
-                  ))}
-                  {comp.weaknesses.map((w: string) => (
-                    <span
-                      key={w}
-                      className="inline-flex items-center rounded-full bg-red-500/10 text-red-500 px-2 py-0.5 text-[10px]"
-                    >
-                      <ThumbsDown className="h-2.5 w-2.5 mr-1" />
-                      {w}
-                    </span>
-                  ))}
-                </div>
+                {/* Strengths & weaknesses — only show if we have real analysis */}
+                {(comp.strengths.length > 0 || comp.weaknesses.length > 0) && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {comp.strengths.map((s: string) => (
+                      <span
+                        key={s}
+                        className="inline-flex items-center rounded-full bg-emerald-500/10 text-emerald-600 px-2 py-0.5 text-[10px]"
+                      >
+                        <ThumbsUp className="h-2.5 w-2.5 mr-1" />
+                        {s}
+                      </span>
+                    ))}
+                    {comp.weaknesses.map((w: string) => (
+                      <span
+                        key={w}
+                        className="inline-flex items-center rounded-full bg-red-500/10 text-red-500 px-2 py-0.5 text-[10px]"
+                      >
+                        <ThumbsDown className="h-2.5 w-2.5 mr-1" />
+                        {w}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Show message when no data available */}
+                {comp.followers === 0 && comp.engagementRate === 0 && (
+                  <p className="text-[10px] text-muted-foreground/60 italic">
+                    Could not find data for this account — it may be private or too small for public data sources.
+                  </p>
+                )}
               </CardContent>
             </Card>
           ))}

@@ -63,37 +63,40 @@ ${dataContext}
 
 IMPORTANT:
 - Only Business and Creator accounts can be analyzed via Instagram's official API. Personal/private accounts cannot be queried.
-- All hashtags must be real, currently active hashtags for this niche.
-- Viral examples should reference real content patterns that perform well in this niche.
+- All hashtags must be REAL, currently active hashtags for this niche — search the web to find them.
+- Viral examples should reference REAL content patterns that perform well in this niche.
 - Insights must be specific, actionable, and reference actual data.
 - Confidence: 90+ for data-backed, 75-89 for pattern-based, 60-74 for estimates.
+- NEVER use placeholder text like "Strength 1" or "Weakness 1". Write REAL, specific analysis.
+- postingFrequency must be a specific value like "3x/week" or "daily" — NEVER write "estimated" or "N/A".
+- topContentTypes percentages must add up to 100. Base them on what you observe from web search.
 
-Return ONLY valid JSON with this exact structure:
+Return ONLY valid JSON with this structure (ALL values must be real, not placeholders):
 {
   "competitors": [
     {
-      "handle": "actual_handle",
-      "name": "Real Display Name",
+      "handle": "username_without_at",
+      "name": "Their Real Display Name",
       "followers": 45200,
       "engagementRate": 3.2,
       "postingFrequency": "5x/week",
       "topContentTypes": { "reels": 45, "carousels": 30, "images": 25 },
-      "strengths": ["Strength 1", "Strength 2"],
-      "weaknesses": ["Weakness 1", "Weakness 2"],
-      "dataSource": "graph_api" or "web_search" or "estimated"
+      "strengths": ["Specific strength based on their content, e.g. 'High-quality educational reels with consistent branding'", "Another real observation"],
+      "weaknesses": ["Specific weakness, e.g. 'Limited carousel content despite high engagement potential'", "Another real observation"],
+      "dataSource": "web_search" or "estimated"
     }
   ],
   "trends": {
-    "hashtags": ["#hashtag1", "#hashtag2", "#hashtag3", "#hashtag4", "#hashtag5", "#hashtag6"],
+    "hashtags": ["#RealHashtag1", "#RealHashtag2", "#RealHashtag3", "#RealHashtag4", "#RealHashtag5", "#RealHashtag6"],
     "viralExamples": [
-      { "type": "Reel", "topic": "Real topic description", "views": "2.3M" }
+      { "type": "Reel", "topic": "Specific real trending content description", "views": "2.3M" }
     ],
     "trendingFormats": [
-      { "name": "Format name", "growth": "+45%" }
+      { "name": "Specific format name", "growth": "+45%" }
     ]
   },
   "insights": [
-    { "text": "Specific data-backed insight...", "confidence": 92, "actionable": true }
+    { "text": "Specific data-backed insight with real numbers...", "confidence": 92, "actionable": true }
   ],
   "dataDisclaimer": "Brief note about data sources used"
 }`;
@@ -277,18 +280,18 @@ export async function generateResearch(
             : Number(c.engagementRate) || 0,
           postingFrequency: graphData
             ? graphData.postingFrequency
-            : String(c.postingFrequency || "N/A"),
+            : (String(c.postingFrequency || "").replace(/estimated|n\/a|unknown/gi, "").trim() || ""),
           topContentTypes: graphData
             ? graphData.topContentTypes
             : c.topContentTypes && typeof c.topContentTypes === "object"
               ? (c.topContentTypes as Record<string, number>)
               : { reels: 40, carousels: 35, images: 25 },
-          // Strengths/weaknesses always from Claude's analysis
+          // Strengths/weaknesses always from Claude's analysis — filter out placeholders
           strengths: Array.isArray(c.strengths)
-            ? c.strengths.map(String)
+            ? c.strengths.map(String).filter((s: string) => !/^(strength|weakness)\s*\d*$/i.test(s.trim()))
             : [],
           weaknesses: Array.isArray(c.weaknesses)
-            ? c.weaknesses.map(String)
+            ? c.weaknesses.map(String).filter((s: string) => !/^(strength|weakness)\s*\d*$/i.test(s.trim()))
             : [],
         };
       })
