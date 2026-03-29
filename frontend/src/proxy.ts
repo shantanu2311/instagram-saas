@@ -5,6 +5,15 @@ import type { NextRequest } from "next/server";
 const protectedPagePrefixes = ["/dashboard", "/studio", "/settings", "/strategy", "/queue"];
 const protectedApiPrefixes = ["/api/studio", "/api/strategy", "/api/brands", "/api/dashboard", "/api/posts", "/api/queue", "/api/instagram", "/api/media"];
 
+// Public API routes that must bypass auth (Meta callbacks, OAuth)
+const publicApiPaths = [
+  "/api/instagram/data-deletion",
+  "/api/instagram/deauthorize",
+  "/api/instagram/callback",
+  "/api/instagram/connect",
+  "/api/auth",
+];
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -12,6 +21,14 @@ export function proxy(request: NextRequest) {
   const token =
     request.cookies.get("authjs.session-token") ??
     request.cookies.get("__Secure-authjs.session-token");
+
+  // Allow public API paths (Meta callbacks, OAuth) without auth
+  const isPublicApi = publicApiPaths.some((path) =>
+    pathname.startsWith(path)
+  );
+  if (isPublicApi) {
+    return NextResponse.next();
+  }
 
   // Protect API routes — return 401
   const isProtectedApi = protectedApiPrefixes.some((prefix) =>
