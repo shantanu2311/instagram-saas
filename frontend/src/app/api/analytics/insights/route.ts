@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
-import { callClaude } from "@/lib/content-engine";
+import { callAI } from "@/lib/content-engine";
 
 export async function POST(request: Request) {
   const limited = rateLimit(request, "generate");
@@ -49,7 +49,7 @@ Top performing posts: ${JSON.stringify(body.analyticsData.topPosts?.slice(0, 3))
 Engagement trend data points: ${body.analyticsData.engagementOverTime?.length || 0} posts`;
 
   try {
-    const result = await callClaude({ system: systemPrompt, userMessage });
+    const result = await callAI({ system: systemPrompt, userMessage });
     const jsonMatch = result.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ insights: [result.trim()] });

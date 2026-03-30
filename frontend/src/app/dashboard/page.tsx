@@ -113,6 +113,10 @@ interface DashboardStats {
       engagement: number;
     } | null;
   } | null;
+  // Strategy lifecycle
+  strategyReviewDue: boolean;
+  strategyAge: number | null;
+  strategyCycle: number | null;
 }
 
 export default function DashboardPage() {
@@ -324,6 +328,36 @@ export default function DashboardPage() {
         ) : (
           <>
             {/* ─── Daily Creative Cockpit ─────────────────────────── */}
+
+            {/* Strategy Review Banner */}
+            {stats?.strategyReviewDue && (
+              <Card className="border-amber-500/30 bg-amber-500/5">
+                <CardContent className="py-4 flex items-center gap-4">
+                  <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                    <RefreshCw className="h-5 w-5 text-amber-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">
+                      30-Day Strategy Review Due
+                      {stats.strategyCycle && (
+                        <span className="ml-2 text-xs text-muted-foreground font-normal">
+                          Cycle {stats.strategyCycle} &middot; {stats.strategyAge} days ago
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      AI will evaluate your goals vs performance and recommend improvements for the next cycle
+                    </p>
+                  </div>
+                  <Link href="/strategy/review-cycle">
+                    <Button size="sm" variant="outline" className="border-amber-500/30 hover:bg-amber-500/10">
+                      Review Now
+                      <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
 
             {/* 1. Today's Content Card (hero) */}
             <TodaysContentCard slot={stats?.todaySlot ?? null} onSlotUpdated={fetchStats} />

@@ -3,7 +3,7 @@
  * Takes extracted text and classifies it into products, moments, inspiration, etc.
  */
 
-import { callClaude } from "./index";
+import { callAI } from "./index";
 
 export interface CollateralAnalysis {
   summary: string;
@@ -97,7 +97,7 @@ RULES:
 DOCUMENT CONTENT:
 ${extractedText.slice(0, 30_000)}`;
 
-  const text = await callClaude({
+  const text = await callAI({
     system: systemPrompt,
     userMessage,
     model: "fast",

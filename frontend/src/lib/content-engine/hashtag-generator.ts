@@ -1,115 +1,210 @@
-import { callClaude, type BrandContext, type StrategyContext } from "./index";
+/**
+ * Hashtag discovery utility — cache-first, zero Graph API cost per post.
+ *
+ * Per-post flow:
+ * 1. Query HashtagCache for brand's niche (scored by relevance × freshness × engagement)
+ * 2. Get user's strategy hashtags from UserHashtagProfile
+ * 3. Python web crawler finds fresh topic-specific hashtags
+ * 4. AI combines all three sources → picks best 12-15
+ * 5. Store new hashtags back to cache (feedback loop)
+ *
+ * Graph API is ONLY used during strategy seeding (see hashtag-seeder.ts).
+ */
 
-export interface HashtagResearchRequest {
-  topic: string;
-  brand: BrandContext;
-  strategy?: StrategyContext | null;
+import { callAI, type BrandContext } from "./index";
+import { prisma } from "@/lib/db";
+import type { GraphApiCredentials } from "./instagram-graph-api";
+import { queryCachedHashtags, upsertHashtagCache } from "./hashtag-seeder";
+
+// ─── Graph API helpers (exported for use by hashtag-seeder) ──────────
+
+export async function searchHashtag(
+  hashtag: string,
+  creds: GraphApiCredentials
+): Promise<string | null> {
+  const clean = hashtag.replace(/^#/, "").toLowerCase();
+  const url = `https://graph.facebook.com/v21.0/ig_hashtag_search?q=${encodeURIComponent(clean)}&user_id=${creds.igAccountId}&access_token=${creds.accessToken}`;
+
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { data?: Array<{ id: string }> };
+    return data.data?.[0]?.id || null;
+  } catch {
+    return null;
+  }
 }
 
-export interface HashtagSet {
-  category: string;
-  tags: Array<{
-    tag: string;
-    reach: "high" | "medium" | "niche";
-    competition: "high" | "medium" | "low";
-  }>;
+export async function fetchHashtagTopMedia(
+  hashtagId: string,
+  creds: GraphApiCredentials
+): Promise<Array<{ id: string; caption: string; likeCount: number; commentsCount: number }>> {
+  const fields = "id,caption,like_count,comments_count";
+  const url = `https://graph.facebook.com/v21.0/${hashtagId}/top_media?user_id=${creds.igAccountId}&fields=${fields}&limit=25&access_token=${creds.accessToken}`;
+
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { data?: Array<Record<string, unknown>> };
+    return (data.data || []).map((p) => ({
+      id: String(p.id || ""),
+      caption: String(p.caption || ""),
+      likeCount: Number(p.like_count) || 0,
+      commentsCount: Number(p.comments_count) || 0,
+    }));
+  } catch {
+    return [];
+  }
 }
 
-export interface HashtagResearchResult {
-  sets: HashtagSet[];
-  recommended: string[];
-  banned: string[];
-  tip: string;
+export function extractHashtags(caption: string): string[] {
+  const matches = caption.match(/#[a-zA-Z0-9_]+/g);
+  return matches ? [...new Set(matches.map((h) => h.toLowerCase()))] : [];
 }
 
-function buildSystemPrompt(req: HashtagResearchRequest): string {
-  const hasStrategy = req.strategy?.hashtagStrategy;
+// ─── Web crawl for fresh topic-specific hashtags ─────────────────────
 
-  let prompt = `You are an Instagram hashtag strategist specializing in 2026 algorithm optimization. You understand how Instagram's Explore page, hashtag following, and content distribution work.
+async function discoverTagsViaCrawl(
+  topic: string,
+  niche: string
+): Promise<string[]> {
+  try {
+    const res = await fetch("http://localhost:8000/api/hashtags/discover-tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic, niche }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { hashtags?: string[] };
+    return data.hashtags || [];
+  } catch {
+    return [];
+  }
+}
 
-BRAND CONTEXT:
-- Niche: ${req.brand.niche || "general"}
-- Brand: ${req.brand.brandName || "growing brand"}
-- Content pillars: ${req.brand.contentPillars.length > 0 ? req.brand.contentPillars.join(", ") : "education, entertainment, engagement"}
-${req.brand.brandHashtag ? `- Brand hashtag: ${req.brand.brandHashtag}` : ""}`;
+// ─── Main discovery function (cache-first) ───────────────────────────
 
-  if (hasStrategy) {
-    const h = req.strategy!.hashtagStrategy!;
-    prompt += `\n\nEXISTING HASHTAG STRATEGY:`;
-    if (h.branded?.length) prompt += `\n- Branded: ${h.branded.join(" ")}`;
-    if (h.niche?.length) prompt += `\n- Niche: ${h.niche.join(" ")}`;
-    if (h.trending?.length) prompt += `\n- Trending: ${h.trending.join(" ")}`;
+export interface DiscoveredHashtags {
+  hashtags: string[];
+  dataSource: "cache" | "web_crawl" | "ai_only";
+  cacheHits: number;
+}
+
+/**
+ * Discover hashtags for a specific post topic.
+ * Called by caption-generator during content generation.
+ *
+ * Zero Graph API cost — uses cache + web crawl + strategy context.
+ */
+export async function discoverHashtags(
+  topic: string,
+  brand: BrandContext,
+  brandId?: string
+): Promise<DiscoveredHashtags> {
+  const niche = brand.niche || "general";
+
+  // Run all three sources in parallel
+  const [cachedHashtags, userProfile, crawledTags] = await Promise.all([
+    // Source 1: Shared hashtag cache (scored)
+    queryCachedHashtags(niche, 30).catch(() => []),
+
+    // Source 2: User's strategy hashtag profile
+    brandId
+      ? prisma.userHashtagProfile
+          .findUnique({ where: { brandId } })
+          .catch(() => null)
+      : Promise.resolve(null),
+
+    // Source 3: Fresh web-crawled hashtags for this specific topic
+    discoverTagsViaCrawl(topic, niche).catch(() => []),
+  ]);
+
+  const cacheHits = cachedHashtags.length;
+
+  // Build context for AI selection
+  const strategyBranded = userProfile
+    ? (userProfile.branded as string[]).map((t) => String(t))
+    : [];
+  const strategyNiche = userProfile
+    ? (userProfile.niche as string[]).map((t) => String(t))
+    : [];
+
+  // If we have no data at all, fall back to AI-only
+  if (cacheHits === 0 && crawledTags.length === 0 && strategyBranded.length === 0) {
+    return { hashtags: [], dataSource: "ai_only", cacheHits: 0 };
   }
 
-  prompt += `\n\nRESEARCH TASK:
-Analyze the topic and generate a comprehensive hashtag strategy with 4 categories:
-1. **Branded** (2-3 tags) — unique to this brand/account
-2. **Niche** (5-8 tags) — specific to the topic and industry, medium competition
-3. **Reach** (5-8 tags) — broader tags for discovery, higher competition
-4. **Trending** (3-5 tags) — currently trending or seasonal tags
+  // Build hashtag lists for AI
+  const cachedList = cachedHashtags
+    .slice(0, 20)
+    .map((h) => `${h.displayTag} (score: ${h.score.toFixed(2)}, source: ${h.source})`)
+    .join("\n");
 
-For each tag, estimate:
-- reach: "high" (>1M posts), "medium" (100K-1M), "niche" (<100K)
-- competition: "high", "medium", "low"
+  const crawledList = crawledTags.slice(0, 15).join(", ");
 
-Also provide:
-- A recommended set of 12-15 tags for this specific post (the optimal mix)
-- Tags to avoid (banned/shadowbanned/overused)
-- One tactical tip specific to this niche
+  const strategyList = [...strategyBranded, ...strategyNiche].join(", ");
 
-Return ONLY valid JSON:
-{
-  "sets": [
-    {
-      "category": "Branded|Niche|Reach|Trending",
-      "tags": [
-        { "tag": "#example", "reach": "medium", "competition": "low" }
-      ]
-    }
-  ],
-  "recommended": ["#tag1", "#tag2", ...],
-  "banned": ["#tag1", "#tag2"],
-  "tip": "One tactical hashtag tip for this niche"
-}`;
+  // AI selects the best 12-15 from all sources
+  const aiResponse = await callAI({
+    system: `You are an Instagram hashtag strategist. You have three sources of REAL hashtag data. Select the best 12-15 hashtags for this specific post.
 
-  return prompt;
-}
+RULES:
+1. ALWAYS include the brand's branded hashtags (from strategy)
+2. Pick 5-7 from the cached/validated hashtags (prefer higher scores)
+3. Pick 2-3 fresh/trending from the web crawl
+4. Add 1-2 broader reach hashtags if needed
+5. Total: 12-15 hashtags max
 
-export async function researchHashtags(
-  req: HashtagResearchRequest
-): Promise<HashtagResearchResult> {
-  const text = await callClaude({
-    system: buildSystemPrompt(req),
-    userMessage: `Research Instagram hashtags for this topic: ${req.topic}`,
+Brand: ${brand.brandName || "growing brand"}
+Niche: ${niche}
+${brand.brandHashtag ? `Brand hashtag (always include): ${brand.brandHashtag}` : ""}
+
+Return ONLY a JSON array of hashtag strings. Example: ["#tag1", "#tag2", ...]`,
+    userMessage: `Post topic: ${topic}
+
+STRATEGY HASHTAGS (branded + niche baseline — include branded ones):
+${strategyList || "None available"}
+
+CACHED HASHTAGS (validated, scored by relevance × freshness × engagement):
+${cachedList || "Cache empty — this is a new niche"}
+
+FRESH WEB-CRAWLED HASHTAGS (topic-specific, trending):
+${crawledList || "No crawl results"}`,
     model: "fast",
-    maxTokens: 2048,
+    maxTokens: 400,
   });
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("Failed to parse hashtag research response");
-  }
-
-  let parsed: Record<string, unknown>;
+  let hashtags: string[] = [];
   try {
-    parsed = JSON.parse(jsonMatch[0]);
+    const match = aiResponse.match(/\[[\s\S]*\]/);
+    if (match) {
+      hashtags = JSON.parse(match[0]).map(String).slice(0, 15);
+    }
   } catch {
-    throw new Error("Claude returned invalid JSON for hashtag research");
+    // Parse failed — use top cached + strategy as fallback
+    hashtags = [
+      ...strategyBranded.slice(0, 3),
+      ...cachedHashtags.slice(0, 9).map((h) => h.displayTag),
+    ];
   }
 
-  const setsRaw = Array.isArray(parsed.sets) ? parsed.sets : [];
+  // Feedback loop: store web-crawled hashtags back to cache (fire-and-forget)
+  if (crawledTags.length > 0) {
+    const newTags = crawledTags.map((t) => ({
+      tag: t.replace(/^#/, "").toLowerCase(),
+      displayTag: t.startsWith("#") ? t : `#${t}`,
+      niche,
+      source: "web_crawl",
+    }));
+    upsertHashtagCache(newTags).catch((err) =>
+      console.warn("Hashtag cache feedback failed:", err)
+    );
+  }
 
   return {
-    sets: setsRaw.map((s: HashtagSet) => ({
-      category: s.category || "General",
-      tags: (Array.isArray(s.tags) ? s.tags : []).map((t) => ({
-        tag: t.tag?.startsWith("#") ? t.tag : `#${t.tag}`,
-        reach: t.reach || "medium",
-        competition: t.competition || "medium",
-      })),
-    })),
-    recommended: Array.isArray(parsed.recommended) ? parsed.recommended : [],
-    banned: Array.isArray(parsed.banned) ? parsed.banned : [],
-    tip: (parsed.tip as string) || "",
+    hashtags,
+    dataSource: cacheHits > 0 ? "cache" : "web_crawl",
+    cacheHits,
   };
 }

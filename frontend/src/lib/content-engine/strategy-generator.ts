@@ -1,4 +1,4 @@
-import { callClaude, type GenerateStrategyRequest } from "./index";
+import { callAI, type GenerateStrategyRequest } from "./index";
 
 export async function generateStrategy(req: GenerateStrategyRequest) {
   const systemPrompt = `You are a world-class Instagram growth strategist who has helped hundreds of brands grow from 0 to 100K+ followers. You create data-informed, actionable content strategies tailored to each brand's unique position.
@@ -82,7 +82,10 @@ IMPORTANT:
 - Growth tactics should be actionable within the first week
 - Milestones should be realistic for the niche
 - Generate 8-10 hook formulas specific to the user's niche. Cover these types: "Pattern Interrupt", "Controversial Take", "Surprising Stat", "Actually...", "Question Hook", "Story Hook". Each hook must have a template (with {placeholder} variables) and a filled-in example.
-- Generate 3-4 reel structures: a 15s (pattern interrupt), 30s (quick tip), 60s (teaching reel), and optionally a faceless structure. Each structure has timed sections with labels, durations, and instructions. Set "faceless" to true only for structures that work without showing face.`;
+- Generate 3-4 reel structures: a 15s (pattern interrupt), 30s (quick tip), 60s (teaching reel), and optionally a faceless structure. Each structure has timed sections with labels, durations, and instructions. Set "faceless" to true only for structures that work without showing face.
+- If products/services are provided, ensure content pillars and examples support showcasing them naturally (not salesy — value-first)
+- If brand moments (launches, events, milestones) are provided, factor them into growth tactics and milestone planning
+- If saved content ideas are provided, incorporate the best-fitting ones into pillar examples and growth tactics`;
 
   const accountLabel =
     req.accountType === "creator"
@@ -114,6 +117,18 @@ CONTENT PREFERENCES: ${req.contentPreferences.join(", ")}
 PAIN POINTS: ${req.painPoints.join(", ")}
 BRAND PERSONALITY: ${req.brandPersonality.join(", ")}
 POSTING HISTORY: ${req.postingHistory || "New to Instagram"}${
+    req.products?.length
+      ? `\n\nPRODUCTS/SERVICES (${req.products.length}):\n${req.products.map(p => `- ${p.name}: ${p.description}${p.category ? ` [${p.category}]` : ""}${p.price ? ` ($${p.price})` : ""}`).join("\n")}`
+      : ""
+  }${
+    req.moments?.length
+      ? `\n\nUPCOMING BRAND MOMENTS (${req.moments.length}):\n${req.moments.map(m => `- ${m.title} (${m.type})${m.date ? ` — ${m.date}` : ""}: ${m.description}`).join("\n")}`
+      : ""
+  }${
+    req.ideas?.length
+      ? `\n\nSAVED CONTENT IDEAS (${req.ideas.length}):\n${req.ideas.map(i => `- ${i.title}${i.contentType ? ` [${i.contentType}]` : ""}${i.pillar ? ` (${i.pillar})` : ""}${i.notes ? `: ${i.notes}` : ""}`).join("\n")}`
+      : ""
+  }${
     req.collateralContext
       ? `\n\nBUSINESS MATERIALS (uploaded documents with extracted info):\n${req.collateralContext}`
       : ""
@@ -140,7 +155,7 @@ ${req.researchResults.insights && req.researchResults.insights.length > 0
       : ""
   }`;
 
-  const text = await callClaude({
+  const text = await callAI({
     system: systemPrompt,
     userMessage,
     model: "deep",
@@ -149,7 +164,7 @@ ${req.researchResults.insights && req.researchResults.insights.length > 0
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("Failed to parse strategy response from Claude");
+    throw new Error("Failed to parse strategy response from AI");
   }
 
   const strategy = JSON.parse(jsonMatch[0]);

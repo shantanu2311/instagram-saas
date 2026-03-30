@@ -11,7 +11,7 @@ Multi-user SaaS platform for automated Instagram content creation and posting. G
 
 - **Frontend**: Next.js 16 (App Router) + React 19 + TypeScript + Tailwind v4 + shadcn/ui
 - **Content Engine**: `src/lib/content-engine/` — OpenAI SDK (gpt-4o-mini)
-- **Backend**: Python FastAPI microservice (port 8000) — image gen, Instagram posting, analytics
+- **Backend**: Python FastAPI microservice (port 8000) — image gen, Instagram posting, analytics, hashtag web crawl
 - **Database**: PostgreSQL 16 (shared, Next.js via Prisma v7 + `@prisma/adapter-pg`, FastAPI via SQLAlchemy)
 - **Queue**: Celery + Redis 7 (scheduled posting, analytics collection)
 - **Auth**: NextAuth v5 (credentials + Instagram OAuth) — Prisma + bcrypt, proxy.ts route protection
@@ -42,7 +42,7 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `calendar-generator.ts` — Monthly content calendar from strategy
 - `repurpose-generator.ts` — Long-form → 4 IG formats (reel script, carousel, caption, stories)
 - `reel-script-generator.ts` — Timed scene breakdown (15/30/60/90s), faceless mode, visual directions
-- `hashtag-generator.ts` — 4-category hashtag research (branded, niche, reach, trending)
+- `hashtag-generator.ts` — Hashtag discovery utility (web crawl + Graph API + AI), integrated into caption generation
 - `research-generator.ts` — Competitor research (Graph API + AI analysis)
 - `instagram-graph-api.ts` — Instagram Business Discovery API client
 
@@ -95,7 +95,7 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `/strategy/review` — Section-by-section approval
 - `/strategy/calendar` — Monthly calendar view (redirects to /strategy if no strategy)
 - `/studio` — Content Studio (Create mode + Repurpose mode + Reel Script Editor)
-- `/studio/hashtags` — Hashtag Explorer (AI-powered research across 4 categories)
+- ~~`/studio/hashtags`~~ — Removed; hashtags now generated inline during content creation
 - `/queue` — Content queue (batch approval/posting)
 - `/queue/preview` — Design preview (redirects if no strategy)
 - `/settings` — Account, brand, automation level, security
@@ -109,7 +109,7 @@ All AI generation lives in `frontend/src/lib/content-engine/`:
 - `POST /api/studio/batch-generate` — Batch generation NDJSON stream + images (auth + rate limited)
 - `POST /api/studio/repurpose` — Repurpose long-form content into 4 IG formats
 - `POST /api/studio/generate-reel` — Reel script generation (timed scenes, faceless mode)
-- `POST /api/studio/hashtags` — Hashtag research (branded/niche/reach/trending sets)
+- ~~`POST /api/studio/hashtags`~~ — Removed; hashtag discovery is now internal to caption generation
 - `POST /api/studio/save` — Save draft to DB with ownership check (auth required)
 - `GET /api/brands` — Returns user's brands from DB (auth + rate limited)
 - `POST /api/brands` — Create/update brand config from onboarding (auth + rate limited)
@@ -351,7 +351,7 @@ Features built from real creator workflows documented in the techniques report:
 | Interview Me First | Deep-dive chat before strategy gen: Claude asks follow-up questions, answers feed into strategy | Done |
 | Hook Formula Bank | Strategy output includes 8-10 hook formulas (6 types) + reel structures with timed sections | Done |
 | Reel Script Editor | Studio Reel mode: duration selector (15/30/60/90s), faceless toggle, timed scene breakdown with voiceover/on-screen text/visual direction | Done |
-| Hashtag Research | Dedicated `/studio/hashtags` page: AI researches branded/niche/reach/trending tags with reach/competition estimates, copy-to-clipboard | Done |
+| Hashtag Research | Integrated into content generation: Python web crawl discovers top accounts → Graph API mines hashtags → AI selects best mix | Done |
 | 6-Step Strategy Framework | Strategy Engine discovery → research → generation (existing) | Done |
 | MCP Analytics | Backend analytics.py exists | Needs IG Graph API |
 | Agentic Automation | Strategy → Calendar → Studio pipeline | Needs real posting |

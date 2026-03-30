@@ -64,11 +64,11 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : "Repurpose failed";
     console.error("Studio repurpose error:", message);
 
-    if (message.includes("ANTHROPIC_API_KEY")) {
+    if (message.includes("OPENAI_API_KEY")) {
       return NextResponse.json(
         {
           error:
-            "Set ANTHROPIC_API_KEY in frontend/.env to enable AI content generation.",
+            "Set OPENAI_API_KEY in frontend/.env to enable AI content generation.",
         },
         { status: 500 }
       );

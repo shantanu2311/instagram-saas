@@ -1,4 +1,4 @@
-import { callClaude, type BrandContext, type StrategyContext } from "./index";
+import { callAI, type BrandContext, type StrategyContext } from "./index";
 
 export interface ReelScriptRequest {
   topic: string;
@@ -152,7 +152,7 @@ Return ONLY valid JSON:
 export async function generateReelScript(
   req: ReelScriptRequest
 ): Promise<ReelScriptResult> {
-  const text = await callClaude({
+  const text = await callAI({
     system: buildSystemPrompt(req),
     userMessage: `Create an Instagram Reel script about: ${req.topic}`,
     model: "fast",
@@ -161,14 +161,14 @@ export async function generateReelScript(
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("Failed to parse reel script response from Claude");
+    throw new Error("Failed to parse reel script response from AI");
   }
 
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(jsonMatch[0]);
   } catch {
-    throw new Error("Claude returned invalid JSON for reel script");
+    throw new Error("AI returned invalid JSON for reel script");
   }
 
   const scores = (parsed.quality_scores as Record<string, number>) || {};

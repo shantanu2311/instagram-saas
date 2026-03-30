@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { callClaude } from "@/lib/content-engine";
+import { callAI } from "@/lib/content-engine";
 import { rateLimit } from "@/lib/rate-limit";
 
 /**
@@ -142,8 +142,8 @@ export async function POST(request: Request) {
     // Extract meta tags and visible text
     const extracted = extractPageData(html);
 
-    // Use Claude to interpret the website data
-    const text = await callClaude({
+    // Use AI to interpret the website data
+    const text = await callAI({
       system: `You extract structured business information from website HTML metadata and content snippets. Return ONLY valid JSON with these fields (use empty string "" if not found):
 {
   "businessName": "company/brand name",
@@ -213,7 +213,7 @@ export async function POST(request: Request) {
             fontInventory.push(`CSS font-family declarations: ${brandData.cssFonts.join(", ")}`);
           }
 
-          const brandAiText = await callClaude({
+          const brandAiText = await callAI({
             system: `You are a brand identity analyst. Your job is to SELECT the correct brand colors and fonts from the ACTUAL CSS data extracted from a website.
 
 CRITICAL RULES:
@@ -350,7 +350,7 @@ Select the brand colors from the inventory above.`,
       err instanceof Error ? err.message : "Website scraping failed";
     console.error("Scrape website error:", message);
 
-    if (message.includes("ANTHROPIC_API_KEY")) {
+    if (message.includes("OPENAI_API_KEY")) {
       return NextResponse.json(
         { error: "API key not configured" },
         { status: 500 }

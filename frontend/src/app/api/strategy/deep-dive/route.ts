@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { callClaude } from "@/lib/content-engine";
+import { callAI } from "@/lib/content-engine";
 import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -67,7 +67,7 @@ MONETIZATION: ${profile.monetizationGoal || "Not specified"}
 
 Generate 3-5 follow-up questions to fill in any gaps and create a stronger strategy.`;
 
-    const text = await callClaude({
+    const text = await callAI({
       system: systemPrompt,
       userMessage,
       model: "fast",
@@ -76,7 +76,7 @@ Generate 3-5 follow-up questions to fill in any gaps and create a stronger strat
 
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error("Failed to parse questions from Claude response");
+      throw new Error("Failed to parse questions from AI response");
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
@@ -91,11 +91,11 @@ Generate 3-5 follow-up questions to fill in any gaps and create a stronger strat
       err instanceof Error ? err.message : "Failed to generate follow-up questions";
     console.error("Deep dive error:", message);
 
-    if (message.includes("ANTHROPIC_API_KEY")) {
+    if (message.includes("OPENAI_API_KEY")) {
       return NextResponse.json(
         {
           error:
-            "Set ANTHROPIC_API_KEY in frontend/.env to enable AI-powered follow-up questions.",
+            "Set OPENAI_API_KEY in frontend/.env to enable AI-powered follow-up questions.",
         },
         { status: 500 }
       );

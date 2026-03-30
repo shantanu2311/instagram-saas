@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { Sparkles, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,9 +58,13 @@ export default function SignInPage() {
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 rounded-xl ig-gradient flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-white" />
-          </div>
+          <Image
+            src="/kuraite-icon.png"
+            alt="Kuraite"
+            width={48}
+            height={48}
+            className="rounded-xl"
+          />
           <h1 className="text-2xl font-bold">Welcome back</h1>
           <p className="text-sm text-muted-foreground">
             Sign in to your Kuraite account

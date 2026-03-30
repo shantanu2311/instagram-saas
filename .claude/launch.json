@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "igcreator-frontend",
-      "runtimeExecutable": "/c/Program Files/nodejs/npm",
+      "runtimeExecutable": "npm.cmd",
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true,

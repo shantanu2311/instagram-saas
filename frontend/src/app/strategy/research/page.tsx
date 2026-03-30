@@ -262,7 +262,7 @@ export default function ResearchPage() {
             Competitor Analysis
           </h2>
           <span className="text-[10px] text-muted-foreground/60 bg-muted/30 rounded-full px-2.5 py-0.5">
-            Works with public Business &amp; Creator accounts only
+            Requires Instagram Graph API connection
           </span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -354,8 +354,8 @@ export default function ResearchPage() {
                   </>
                 )}
 
-                {/* Strengths & weaknesses — only show if we have real analysis */}
-                {(comp.strengths.length > 0 || comp.weaknesses.length > 0) && (
+                {/* Strengths & weaknesses — only show when we have real metrics */}
+                {comp.followers > 0 && (comp.strengths.length > 0 || comp.weaknesses.length > 0) && (
                   <div className="flex flex-wrap gap-1.5">
                     {comp.strengths.map((s: string) => (
                       <span
@@ -381,7 +381,7 @@ export default function ResearchPage() {
                 {/* Show message when no data available */}
                 {comp.followers === 0 && comp.engagementRate === 0 && (
                   <p className="text-[10px] text-muted-foreground/60 italic">
-                    Could not find data for this account — it may be private or too small for public data sources.
+                    No data available — this account may be private, personal, or the Instagram Graph API is not connected.
                   </p>
                 )}
               </CardContent>
@@ -406,16 +406,22 @@ export default function ResearchPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-1.5">
-                {results.trends.hashtags.map((tag: string) => (
-                  <span
-                    key={tag}
-                    className="inline-flex rounded-full bg-ig-pink/10 text-ig-pink px-2.5 py-0.5 text-xs"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+              {results.trends.hashtags.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {results.trends.hashtags.map((tag: string) => (
+                    <span
+                      key={tag}
+                      className="inline-flex rounded-full bg-ig-pink/10 text-ig-pink px-2.5 py-0.5 text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[10px] text-muted-foreground/60 italic">
+                  No verified hashtag data found for this niche.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -428,19 +434,25 @@ export default function ResearchPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {results.trends.viralExamples.map((ex: any) => (
-                <div key={ex.topic} className="text-sm space-y-0.5">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="text-[10px]">
-                      {ex.type}
-                    </Badge>
-                    <span className="text-[10px] text-muted-foreground">
-                      {ex.views} views
-                    </span>
+              {results.trends.viralExamples.length > 0 ? (
+                results.trends.viralExamples.map((ex: any) => (
+                  <div key={ex.topic} className="text-sm space-y-0.5">
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary" className="text-[10px]">
+                        {ex.type}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">
+                        {ex.views} views
+                      </span>
+                    </div>
+                    <p className="text-xs">{ex.topic}</p>
                   </div>
-                  <p className="text-xs">{ex.topic}</p>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-[10px] text-muted-foreground/60 italic">
+                  No verified viral examples found for this niche.
+                </p>
+              )}
             </CardContent>
           </Card>
 
@@ -453,17 +465,23 @@ export default function ResearchPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {results.trends.trendingFormats.map((f: any) => (
-                <div
-                  key={f.name}
-                  className="flex items-center justify-between text-sm"
-                >
-                  <span>{f.name}</span>
-                  <span className="text-emerald-500 text-xs font-medium">
-                    {f.growth}
-                  </span>
-                </div>
-              ))}
+              {results.trends.trendingFormats.length > 0 ? (
+                results.trends.trendingFormats.map((f: any) => (
+                  <div
+                    key={f.name}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span>{f.name}</span>
+                    <span className="text-emerald-500 text-xs font-medium">
+                      {f.growth}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-[10px] text-muted-foreground/60 italic">
+                  No verified trending format data found.
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>

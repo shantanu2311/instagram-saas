@@ -1,8 +1,9 @@
 import {
-  callClaude,
+  callAI,
   type GenerateContentRequest,
   type GenerateContentResult,
 } from "./index";
+import { discoverHashtags } from "./hashtag-generator";
 
 function buildToneDescription(formality: number, humor: number): string {
   const formalLabel =
@@ -112,17 +113,25 @@ export async function generateCaption(
     ? `Create an Instagram carousel post about: ${req.topic}\n\nGenerate exactly ${req.slideCount || 5} slides.`
     : `Create an Instagram ${req.contentType} post about: ${req.topic}`;
 
-  const text = await callClaude({
-    system: buildSystemPrompt(req),
-    userMessage,
-    model: "fast",
-    maxTokens: 1024,
-  });
+  // Run caption generation and hashtag discovery in parallel
+  const [text, discoveredHashtags] = await Promise.all([
+    callAI({
+      system: buildSystemPrompt(req),
+      userMessage,
+      model: "fast",
+      maxTokens: 1024,
+    }),
+    discoverHashtags(req.topic, req.brand, req.brandId).catch(() => ({
+      hashtags: [] as string[],
+      dataSource: "ai_only" as const,
+      cacheHits: 0,
+    })),
+  ]);
 
   // Extract JSON from response
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("Failed to parse caption response from Claude");
+    throw new Error("Failed to parse caption response from AI");
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -144,10 +153,16 @@ export async function generateCaption(
     ((hookStrength + captionQuality + hashtagRelevance + ctaStrength + brandAlignment) / 5) * 10
   );
 
+  // Use discovered hashtags if available (from cache or web crawl), otherwise fall back to AI-generated ones
+  const hashtags =
+    discoveredHashtags.dataSource !== "ai_only" && discoveredHashtags.hashtags.length > 0
+      ? discoveredHashtags.hashtags
+      : parsed.hashtags || ["#content", "#instagram"];
+
   return {
     headline: parsed.headline || req.topic.slice(0, 60),
     caption: parsed.caption || "",
-    hashtags: parsed.hashtags || ["#content", "#instagram"],
+    hashtags,
     slides: parsed.slides || undefined,
     quality_score: Math.min(avgScore, 100),
     quality_criteria: {

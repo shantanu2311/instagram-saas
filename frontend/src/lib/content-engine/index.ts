@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 
 // ---------- Mode detection ----------
-// Priority: OPENAI_API_KEY → ANTHROPIC_API_KEY → Claude CLI
 
 function hasOpenAiKey(): boolean {
   return !!process.env.OPENAI_API_KEY;
@@ -27,55 +26,26 @@ export const DEEP_MODEL = "gpt-4o-mini" as const;
 
 // ---------- Unified caller ----------
 
-interface CallClaudeOptions {
+interface CallAIOptions {
   system: string;
   userMessage: string;
   model?: "fast" | "deep";
   maxTokens?: number;
-  webSearch?: boolean;
 }
 
 /**
- * Call AI via OpenAI API.
+ * Call AI via OpenAI API (gpt-4o-mini).
  * Returns the raw text response.
- * Named `callClaude` for backward compatibility with all generators.
  */
-export async function callClaude(opts: CallClaudeOptions): Promise<string> {
+export async function callAI(opts: CallAIOptions): Promise<string> {
   if (!hasOpenAiKey()) {
     throw new Error(
       "OPENAI_API_KEY not set. Add it to frontend/.env to enable AI features."
     );
   }
-  return callOpenAi(opts);
-}
 
-async function callOpenAi(opts: CallClaudeOptions): Promise<string> {
   const client = getOpenAiClient();
   const model = opts.model === "deep" ? DEEP_MODEL : FAST_MODEL;
-
-  // Use Responses API with web_search tool when web search is requested
-  if (opts.webSearch) {
-    const response = await client.responses.create({
-      model,
-      max_output_tokens: opts.maxTokens ?? 4096,
-      instructions: opts.system,
-      input: opts.userMessage,
-      tools: [{ type: "web_search_preview" as const }],
-    });
-
-    // Extract text from response output items
-    const textParts: string[] = [];
-    for (const item of response.output) {
-      if (item.type === "message") {
-        for (const content of item.content) {
-          if (content.type === "output_text") {
-            textParts.push(content.text);
-          }
-        }
-      }
-    }
-    return textParts.join("") || "";
-  }
 
   const response = await client.chat.completions.create({
     model,
@@ -136,6 +106,7 @@ export interface GenerateContentRequest {
   slideCount?: number;
   products?: ProductContext[];
   moments?: MomentContext[];
+  brandId?: string;
 }
 
 export interface GenerateContentResult {
@@ -174,6 +145,9 @@ export interface GenerateStrategyRequest {
   monetizationGoal: string;
   instagramHandle: string;
   collateralContext?: string; // Aggregated text from uploaded business materials
+  products?: Array<{ name: string; description: string; category: string; price?: string }>;
+  moments?: Array<{ title: string; type: string; date?: string; description: string }>;
+  ideas?: Array<{ title: string; contentType?: string; pillar?: string; notes?: string }>;
   deepDiveAnswers?: Array<{ question: string; answer: string }>;
   researchResults?: {
     competitors?: Array<{
@@ -197,9 +171,11 @@ export interface GenerateStrategyRequest {
 export interface GenerateCalendarRequest {
   strategy: StrategyContext;
   brand: BrandContext;
-  month: number; // 1-12
-  year: number;
+  startDate: string; // ISO date, e.g. "2026-03-30"
+  days: number; // default 30
   postsPerWeek: number;
+  moments?: Array<{ title: string; type: string; date?: string; description: string }>;
+  ideas?: Array<{ title: string; contentType?: string; pillar?: string; notes?: string }>;
 }
 
 export { generateCaption } from "./caption-generator";
@@ -207,5 +183,5 @@ export { generateStrategy } from "./strategy-generator";
 export { generateCalendar } from "./calendar-generator";
 export { repurposeContent } from "./repurpose-generator";
 export { generateReelScript } from "./reel-script-generator";
-export { researchHashtags } from "./hashtag-generator";
+export { discoverHashtags, searchHashtag, fetchHashtagTopMedia, extractHashtags } from "./hashtag-generator";
 export { generateResearch } from "./research-generator";

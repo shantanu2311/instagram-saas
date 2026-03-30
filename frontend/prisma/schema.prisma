@@ -149,6 +149,7 @@ model Brand {
   strategy         Strategy?
   discoveryProfile DiscoveryProfile?
   collaterals      Collateral[]
+  hashtagProfile   UserHashtagProfile?
 
   @@index([userId])
 }
@@ -239,16 +240,20 @@ model AccountSnapshot {
 // ─── Strategy ─────────────────────────────────────────────────
 
 model Strategy {
-  id        String   @id @default(cuid())
-  brandId   String   @unique
-  data      Json     // Full ContentStrategy object
-  status    String   @default("active") // "active" | "archived"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String    @id @default(cuid())
+  brandId      String    @unique
+  data         Json      // Full ContentStrategy object
+  status       String    @default("active") // "active" | "archived"
+  approvedAt   DateTime? // When current 30-day cycle started
+  nextReviewAt DateTime? // approvedAt + 30 days — triggers review banner
+  cycleNumber  Int       @default(1) // Which strategy cycle we're on
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
 
   @@index([brandId])
+  @@index([nextReviewAt])
 }
 
 // ─── Discovery Profile ────────────────────────────────────────
@@ -425,4 +430,37 @@ model ContentIdea {
 
   @@index([brandId])
   @@index([status])
+}
+
+// ─── Hashtag Cache ───────────────────────────────────────────
+
+model HashtagCache {
+  id                String    @id @default(cuid())
+  tag               String    @unique          // lowercase no # prefix, e.g. "earlylearning"
+  displayTag        String                     // original casing with #, e.g. "#EarlyLearning"
+  niche             String?                    // primary niche category
+  source            String                     // "graph_api" | "web_crawl" | "co_occurrence"
+  avgEngagement     Float     @default(0)      // rolling avg engagement from top_media
+  coOccurrenceCount Int       @default(1)      // times seen alongside other tags
+  lastValidatedAt   DateTime?                  // last Graph API validation
+  lastSeenAt        DateTime  @default(now())  // last time any user/crawl encountered this
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([niche])
+  @@index([lastSeenAt])
+}
+
+model UserHashtagProfile {
+  id            String    @id @default(cuid())
+  brandId       String    @unique
+  branded       Json      @default("[]")   // string[] of validated branded hashtags
+  niche         Json      @default("[]")   // string[] of validated niche hashtags
+  trending      Json      @default("[]")   // string[] of trending hashtags at seed time
+  seedQuotaUsed Int       @default(0)      // ig_hashtag_search calls used during seeding
+  seededAt      DateTime?                  // when seeding completed
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
 }

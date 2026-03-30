@@ -71,6 +71,38 @@ export async function POST(request: Request) {
       // Ignore collateral fetch errors — strategy gen should still work
     }
 
+    // Fetch products, moments, and ideas for richer strategy generation
+    let products: Array<{ name: string; description: string | null; category: string | null; price: number | null }> = [];
+    let moments: Array<{ title: string; type: string; date: Date; description: string | null }> = [];
+    let ideas: Array<{ title: string; contentType: string | null; pillar: string | null; notes: string | null }> = [];
+    try {
+      const brand = await prisma.brand.findFirst({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (brand) {
+        [products, moments, ideas] = await Promise.all([
+          prisma.product.findMany({
+            where: { brandId: brand.id },
+            select: { name: true, description: true, category: true, price: true },
+            take: 50,
+          }),
+          prisma.brandMoment.findMany({
+            where: { brandId: brand.id },
+            select: { title: true, type: true, date: true, description: true },
+            take: 30,
+          }),
+          prisma.contentIdea.findMany({
+            where: { brandId: brand.id, status: "new" },
+            select: { title: true, contentType: true, pillar: true, notes: true },
+            take: 30,
+          }),
+        ]);
+      }
+    } catch {
+      // Non-fatal — strategy gen still works without these
+    }
+
     const strategy = await generateStrategy({
       accountType: body.accountType || "business",
       businessName: body.businessName || "",
@@ -92,6 +124,24 @@ export async function POST(request: Request) {
       monetizationGoal: body.monetizationGoal || "",
       instagramHandle: body.instagramHandle || "",
       collateralContext,
+      products: products.length > 0 ? products.map(p => ({
+        name: p.name,
+        description: p.description || "",
+        category: p.category || "",
+        price: p.price != null ? String(p.price) : undefined,
+      })) : undefined,
+      moments: moments.length > 0 ? moments.map(m => ({
+        title: m.title,
+        type: m.type,
+        date: m.date.toISOString().split("T")[0],
+        description: m.description || "",
+      })) : undefined,
+      ideas: ideas.length > 0 ? ideas.map(i => ({
+        title: i.title,
+        contentType: i.contentType ?? undefined,
+        pillar: i.pillar ?? undefined,
+        notes: i.notes ?? undefined,
+      })) : undefined,
       deepDiveAnswers: body.deepDiveAnswers || undefined,
       researchResults: body.researchResults || undefined,
     });
@@ -101,9 +151,9 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : "Strategy generation failed";
     console.error("Strategy generate error:", message);
 
-    if (message.includes("ANTHROPIC_API_KEY")) {
+    if (message.includes("OPENAI_API_KEY")) {
       return NextResponse.json(
-        { error: "Set ANTHROPIC_API_KEY in frontend/.env to enable AI strategy generation." },
+        { error: "Set OPENAI_API_KEY in frontend/.env to enable AI strategy generation." },
         { status: 500 }
       );
     }

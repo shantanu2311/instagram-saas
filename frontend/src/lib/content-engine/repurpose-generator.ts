@@ -1,4 +1,4 @@
-import { callClaude, type BrandContext, type StrategyContext } from "./index";
+import { callAI, type BrandContext, type StrategyContext } from "./index";
 
 export interface RepurposeRequest {
   sourceContent: string;
@@ -108,7 +108,7 @@ export async function repurposeContent(
     req.sourceType === "transcript" ? "video/podcast transcript" :
     req.sourceType === "notes" ? "notes/bullet points" : "content";
 
-  const text = await callClaude({
+  const text = await callAI({
     system: buildSystemPrompt(req),
     userMessage: `Repurpose this ${sourceLabel} into 4 Instagram formats (Reel script, Carousel, Caption post, Stories):\n\n---\n${req.sourceContent}\n---`,
     model: "fast",
@@ -117,14 +117,14 @@ export async function repurposeContent(
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("Failed to parse repurpose response from Claude");
+    throw new Error("Failed to parse repurpose response from AI");
   }
 
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(jsonMatch[0]);
   } catch {
-    throw new Error("Claude returned invalid JSON for repurpose");
+    throw new Error("AI returned invalid JSON for repurpose");
   }
 
   const reel = (parsed.reel as Record<string, unknown>) || {};

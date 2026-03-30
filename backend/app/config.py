@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     s3_endpoint: str | None = None
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3002"]
 
     model_config = {"env_file": ".env"}
 

@@ -154,6 +154,33 @@ export async function GET(request: Request) {
     select: { id: true },
   });
 
+  // Strategy review cycle check
+  let strategyReviewDue = false;
+  let strategyAge: number | null = null;
+  let strategyCycle: number | null = null;
+
+  if (brand) {
+    const strategy = await prisma.strategy.findUnique({
+      where: { brandId: brand.id },
+      select: { approvedAt: true, nextReviewAt: true, cycleNumber: true },
+    });
+
+    if (strategy?.approvedAt) {
+      const now = new Date();
+      strategyAge = Math.floor(
+        (now.getTime() - new Date(strategy.approvedAt).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      strategyCycle = strategy.cycleNumber;
+
+      if (strategy.nextReviewAt && new Date(strategy.nextReviewAt) <= now) {
+        strategyReviewDue = true;
+      } else if (!strategy.nextReviewAt && strategyAge >= 30) {
+        // Fallback for strategies without nextReviewAt (created before this feature)
+        strategyReviewDue = true;
+      }
+    }
+  }
+
   return NextResponse.json({
     isNewUser: totalContent === 0 && !brand,
     hasBrand: !!brand,
@@ -169,5 +196,9 @@ export async function GET(request: Request) {
     todaySlot,
     weekSlots,
     yesterdayPost,
+    // Strategy lifecycle
+    strategyReviewDue,
+    strategyAge,
+    strategyCycle,
   });
 }

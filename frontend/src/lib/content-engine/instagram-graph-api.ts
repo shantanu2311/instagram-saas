@@ -231,8 +231,8 @@ export function analyzeProfile(profile: IGBusinessProfile): CompetitorAnalysis {
     engagementRate,
     postingFrequency,
     topContentTypes,
-    strengths: [], // Will be filled by Claude analysis
-    weaknesses: [], // Will be filled by Claude analysis
+    strengths: [], // Will be filled by AI analysis
+    weaknesses: [], // Will be filled by AI analysis
     recentPostCount: media.length,
     avgLikes,
     avgComments,

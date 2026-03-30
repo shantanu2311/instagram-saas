@@ -5,7 +5,6 @@ import {
   Wand2,
   Calendar,
   BarChart3,
-  Hash,
   Upload,
 } from "lucide-react";
 
@@ -32,9 +31,9 @@ const actions = [
     bg: "bg-emerald-500/10 hover:bg-emerald-500/20",
   },
   {
-    label: "Hashtags",
-    href: "/studio/hashtags",
-    icon: Hash,
+    label: "Media Library",
+    href: "/dashboard/media",
+    icon: Upload,
     color: "text-amber-500",
     bg: "bg-amber-500/10 hover:bg-amber-500/20",
   },

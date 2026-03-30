@@ -61,9 +61,9 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : "Reel script generation failed";
     console.error("Reel generate error:", message);
 
-    if (message.includes("ANTHROPIC_API_KEY")) {
+    if (message.includes("OPENAI_API_KEY")) {
       return NextResponse.json(
-        { error: "Set ANTHROPIC_API_KEY in frontend/.env to enable AI content generation." },
+        { error: "Set OPENAI_API_KEY in frontend/.env to enable AI content generation." },
         { status: 500 }
       );
     }

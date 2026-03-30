@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/db";
-import { callClaude } from "@/lib/content-engine";
+import { callAI } from "@/lib/content-engine";
 
 export async function POST(request: Request) {
   const limited = rateLimit(request, "generate");
@@ -119,7 +119,7 @@ PERFORMANCE DATA (last ${period} days):
 - Total engagement: ${totalEngagement}`;
 
   try {
-    const result = await callClaude({ system: systemPrompt, userMessage });
+    const result = await callAI({ system: systemPrompt, userMessage });
     const jsonMatch = result.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return NextResponse.json({ error: "Failed to parse AI response" }, { status: 500 });

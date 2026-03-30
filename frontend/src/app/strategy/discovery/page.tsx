@@ -13,7 +13,7 @@ import { DiscoveryStepBrandIdentity } from "@/components/strategy/discovery-step
 import { DiscoveryStepVoice } from "@/components/strategy/discovery-step-voice";
 import { DiscoveryStepCollaterals } from "@/components/strategy/discovery-step-collaterals";
 import { DiscoveryStepUsp } from "@/components/strategy/discovery-step-usp";
-import { Sparkles } from "lucide-react";
+import Image from "next/image";
 
 const steps = [
   { label: "Type", component: DiscoveryStepAccountType },
@@ -40,9 +40,7 @@ export default function DiscoveryPage() {
       <div className="border-b border-border/40 px-6 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg ig-gradient flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
+            <Image src="/kuraite-icon.png" alt="Kuraite" width={32} height={32} className="rounded-lg" />
             <span className="font-semibold">Strategy Discovery</span>
           </div>
           <div className="flex items-center gap-1 overflow-x-auto">

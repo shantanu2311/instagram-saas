@@ -108,6 +108,13 @@ export async function POST(request: Request) {
       // Non-fatal: generate without product/moment context
     }
 
+    // Resolve brandId for hashtag cache queries
+    let brandId: string | undefined;
+    try {
+      const userBrandForId = await prisma.brand.findFirst({ where: { userId: session.user.id }, select: { id: true } });
+      brandId = userBrandForId?.id;
+    } catch { /* non-fatal */ }
+
     const result = await generateCaption({
       topic: body.topic || "Instagram post",
       pillar: body.pillar || "facts",
@@ -118,6 +125,7 @@ export async function POST(request: Request) {
       slideCount,
       products: products.length > 0 ? products : undefined,
       moments: moments.length > 0 ? moments : undefined,
+      brandId,
     });
 
     // Generate image via backend (if running)

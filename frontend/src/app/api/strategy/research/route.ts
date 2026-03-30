@@ -39,9 +39,9 @@ export async function POST(request: Request) {
     const message = err instanceof Error ? err.message : "Research generation failed";
     console.error("Research error:", message);
 
-    if (message.includes("ANTHROPIC_API_KEY")) {
+    if (message.includes("OPENAI_API_KEY")) {
       return NextResponse.json(
-        { error: "Set ANTHROPIC_API_KEY in frontend/.env to enable AI features." },
+        { error: "Set OPENAI_API_KEY in frontend/.env to enable AI features." },
         { status: 500 }
       );
     }

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { seedHashtagsFromStrategy } from "@/lib/content-engine/hashtag-seeder";
+import { getInstagramCredentials } from "@/lib/instagram-token";
 
 export async function POST(request: Request) {
   const limited = rateLimit(request, "default");
@@ -48,18 +50,42 @@ export async function POST(request: Request) {
     }
 
     // Upsert strategy (one per brand)
+    const now = new Date();
+    const nextReview = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // Check if existing strategy exists for cycle increment
+    const existing = await prisma.strategy.findUnique({
+      where: { brandId },
+      select: { cycleNumber: true },
+    });
+
     const saved = await prisma.strategy.upsert({
       where: { brandId },
       create: {
         brandId,
         data: strategy,
         status: "active",
+        approvedAt: now,
+        nextReviewAt: nextReview,
+        cycleNumber: 1,
       },
       update: {
         data: strategy,
         status: "active",
+        approvedAt: now,
+        nextReviewAt: nextReview,
+        cycleNumber: (existing?.cycleNumber || 0) + 1,
       },
     });
+
+    // Fire-and-forget: seed hashtag cache from strategy
+    const igCreds = await getInstagramCredentials();
+    if (igCreds) {
+      seedHashtagsFromStrategy(brandId, strategy, brand.niche, {
+        accessToken: igCreds.accessToken,
+        igAccountId: igCreds.igAccountId,
+      }).catch((err) => console.error("Hashtag seeding failed:", err));
+    }
 
     return NextResponse.json({ id: saved.id, status: "approved" });
   } catch (err) {

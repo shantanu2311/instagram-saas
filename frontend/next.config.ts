@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.openai.com https://api.anthropic.com http://localhost:8000",
+              "connect-src 'self' https://api.openai.com http://localhost:8000",
               "frame-ancestors 'none'",
             ].join("; "),
           },

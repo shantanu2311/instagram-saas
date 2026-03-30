@@ -28,8 +28,8 @@ export async function POST(request: Request) {
     }
 
     const now = new Date();
-    const month = body.month || now.getMonth() + 1;
-    const year = body.year || now.getFullYear();
+    const startDate = body.startDate || now.toISOString().split("T")[0];
+    const days = Math.min(90, Math.max(7, Number(body.days) || 30));
 
     // Build brand context
     const brand: BrandContext = {
@@ -55,16 +55,70 @@ export async function POST(request: Request) {
       ],
     };
 
+    // Fetch moments and ideas if authenticated + brandId present
+    let calendarMoments: Array<{ title: string; type: string; date?: string; description: string }> | undefined;
+    let calendarIdeas: Array<{ title: string; contentType?: string; pillar?: string; notes?: string }> | undefined;
+
+    const session = await auth();
+    if (session?.user?.id && body.brandId) {
+      try {
+        const ownedBrand = await prisma.brand.findFirst({
+          where: { id: body.brandId, userId: session.user.id },
+          select: { id: true },
+        });
+        if (ownedBrand) {
+          const endDate = new Date(startDate);
+          endDate.setDate(endDate.getDate() + days);
+
+          const [dbMoments, dbIdeas] = await Promise.all([
+            prisma.brandMoment.findMany({
+              where: {
+                brandId: ownedBrand.id,
+                date: { gte: new Date(startDate), lte: endDate },
+              },
+              select: { title: true, type: true, date: true, description: true },
+              take: 20,
+            }),
+            prisma.contentIdea.findMany({
+              where: { brandId: ownedBrand.id, status: "new" },
+              select: { title: true, contentType: true, pillar: true, notes: true },
+              take: 20,
+            }),
+          ]);
+
+          if (dbMoments.length > 0) {
+            calendarMoments = dbMoments.map(m => ({
+              title: m.title,
+              type: m.type,
+              date: m.date.toISOString().split("T")[0],
+              description: m.description || "",
+            }));
+          }
+          if (dbIdeas.length > 0) {
+            calendarIdeas = dbIdeas.map(i => ({
+              title: i.title,
+              contentType: i.contentType ?? undefined,
+              pillar: i.pillar ?? undefined,
+              notes: i.notes ?? undefined,
+            }));
+          }
+        }
+      } catch {
+        // Non-fatal — calendar gen still works without these
+      }
+    }
+
     const calendar = await generateCalendar({
       strategy,
       brand,
-      month,
-      year,
+      startDate,
+      days,
       postsPerWeek: body.postsPerWeek || 5,
+      moments: calendarMoments,
+      ideas: calendarIdeas,
     });
 
     // Auto-persist to DB if user is authenticated and brandId is provided
-    const session = await auth();
     if (session?.user?.id && body.brandId && calendar?.slots?.length) {
       try {
         // Verify brand ownership before persisting

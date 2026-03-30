@@ -159,8 +159,8 @@ export interface CalendarSlot {
 export interface ContentCalendar {
   id: string;
   mock?: boolean;
-  month: number;
-  year: number;
+  startDate?: string;
+  endDate?: string;
   slots: CalendarSlot[];
 }
 
