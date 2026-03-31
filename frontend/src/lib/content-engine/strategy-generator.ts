@@ -85,7 +85,8 @@ IMPORTANT:
 - Generate 3-4 reel structures: a 15s (pattern interrupt), 30s (quick tip), 60s (teaching reel), and optionally a faceless structure. Each structure has timed sections with labels, durations, and instructions. Set "faceless" to true only for structures that work without showing face.
 - If products/services are provided, ensure content pillars and examples support showcasing them naturally (not salesy — value-first)
 - If brand moments (launches, events, milestones) are provided, factor them into growth tactics and milestone planning
-- If saved content ideas are provided, incorporate the best-fitting ones into pillar examples and growth tactics`;
+- If saved content ideas are provided, incorporate the best-fitting ones into pillar examples and growth tactics
+- If Instagram page analysis is provided, use the REAL engagement data, content mix, top-performing posts, and best posting times to inform your recommendations. Build on what's already working — don't ignore proven successes. Adjust content format ratios based on actual performance data.`;
 
   const accountLabel =
     req.accountType === "creator"
@@ -117,6 +118,17 @@ CONTENT PREFERENCES: ${req.contentPreferences.join(", ")}
 PAIN POINTS: ${req.painPoints.join(", ")}
 BRAND PERSONALITY: ${req.brandPersonality.join(", ")}
 POSTING HISTORY: ${req.postingHistory || "New to Instagram"}${
+    req.instagramPageAnalysis
+      ? `\n\nINSTAGRAM PAGE ANALYSIS (real data from their current IG page):
+@${req.instagramPageAnalysis.handle} — ${req.instagramPageAnalysis.followers.toLocaleString()} followers, ${req.instagramPageAnalysis.totalPosts} total posts
+- Engagement rate: ${req.instagramPageAnalysis.engagementRate}% (avg ${req.instagramPageAnalysis.avgLikes} likes, ${req.instagramPageAnalysis.avgComments} comments per post)
+- Posting frequency: ${req.instagramPageAnalysis.postingFrequency}
+- Content mix: ${req.instagramPageAnalysis.contentMix.reels}% reels, ${req.instagramPageAnalysis.contentMix.carousels}% carousels, ${req.instagramPageAnalysis.contentMix.images}% images
+- Best posting times: ${req.instagramPageAnalysis.bestPostingTimes.join(", ") || "N/A"}
+${req.instagramPageAnalysis.topPosts.length > 0 ? `- Top performing posts:\n${req.instagramPageAnalysis.topPosts.map((p, i) => `  ${i + 1}. [${p.type}] ${p.likes} likes, ${p.comments} comments — "${p.caption.slice(0, 100)}${p.caption.length > 100 ? "..." : ""}"`).join("\n")}` : ""}
+USE THIS REAL DATA to calibrate your recommendations — build on what works, fix what doesn't.`
+      : ""
+  }${
     req.products?.length
       ? `\n\nPRODUCTS/SERVICES (${req.products.length}):\n${req.products.map(p => `- ${p.name}: ${p.description}${p.category ? ` [${p.category}]` : ""}${p.price ? ` ($${p.price})` : ""}`).join("\n")}`
       : ""

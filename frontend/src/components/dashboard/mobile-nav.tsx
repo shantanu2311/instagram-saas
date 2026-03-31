@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { KuraiteIcon, KuraiteWordmark } from "@/components/kuraite-logo";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -46,8 +47,8 @@ export function MobileNav() {
     <div className="md:hidden border-b border-border/40 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
       <div className="flex items-center justify-between px-4 h-14">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <Image src="/kuraite-icon.png" alt="Kuraite" width={28} height={28} className="rounded-lg" />
-          <span className="font-semibold text-sm">Kuraite</span>
+          <KuraiteIcon size={28} />
+          <KuraiteWordmark className="text-sm" />
         </Link>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger
@@ -65,8 +66,8 @@ export function MobileNav() {
                   className="flex items-center gap-2"
                   onClick={() => setOpen(false)}
                 >
-                  <Image src="/kuraite-icon.png" alt="Kuraite" width={32} height={32} className="rounded-lg" />
-                  <span className="font-semibold">Kuraite</span>
+                  <KuraiteIcon size={32} />
+                  <KuraiteWordmark />
                 </Link>
               </SheetTitle>
             </SheetHeader>

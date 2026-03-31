@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { KuraiteIcon, KuraiteWordmark } from "@/components/kuraite-logo";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -48,8 +49,8 @@ export function Sidebar() {
       {/* Logo */}
       <div className="px-4 py-4 border-b border-border/40">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <Image src="/kuraite-icon.png" alt="Kuraite" width={32} height={32} className="rounded-lg" />
-          <span className="font-semibold">Kuraite</span>
+          <KuraiteIcon size={32} />
+          <KuraiteWordmark />
         </Link>
       </div>
 

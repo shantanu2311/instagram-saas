@@ -59,7 +59,7 @@ export default function SignInPage() {
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
           <Image
-            src="/kuraite-icon.png"
+            src="/kuraite-icon.svg"
             alt="Kuraite"
             width={48}
             height={48}

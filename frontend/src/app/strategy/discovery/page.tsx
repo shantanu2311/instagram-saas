@@ -40,7 +40,7 @@ export default function DiscoveryPage() {
       <div className="border-b border-border/40 px-6 py-4">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Image src="/kuraite-icon.png" alt="Kuraite" width={32} height={32} className="rounded-lg" />
+            <Image src="/kuraite-icon.svg" alt="Kuraite" width={32} height={32} className="rounded-lg" />
             <span className="font-semibold">Strategy Discovery</span>
           </div>
           <div className="flex items-center gap-1 overflow-x-auto">

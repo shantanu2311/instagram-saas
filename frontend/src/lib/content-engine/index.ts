@@ -148,6 +148,19 @@ export interface GenerateStrategyRequest {
   products?: Array<{ name: string; description: string; category: string; price?: string }>;
   moments?: Array<{ title: string; type: string; date?: string; description: string }>;
   ideas?: Array<{ title: string; contentType?: string; pillar?: string; notes?: string }>;
+  instagramPageAnalysis?: {
+    handle: string;
+    followers: number;
+    totalPosts: number;
+    engagementRate: number;
+    avgLikes: number;
+    avgComments: number;
+    postingFrequency: string;
+    contentMix: { reels: number; carousels: number; images: number };
+    topPosts: Array<{ caption: string; type: string; likes: number; comments: number }>;
+    bestPostingTimes: string[];
+    accountAge?: string;
+  };
   deepDiveAnswers?: Array<{ question: string; answer: string }>;
   researchResults?: {
     competitors?: Array<{

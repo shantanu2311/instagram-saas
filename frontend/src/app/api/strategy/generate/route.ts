@@ -3,6 +3,8 @@ import { generateStrategy } from "@/lib/content-engine";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
+import { getInstagramCredentials } from "@/lib/instagram-token";
+import { analyzeOwnPage } from "@/lib/content-engine/instagram-graph-api";
 
 export async function POST(request: Request) {
   const limited = rateLimit(request, "generate");
@@ -103,6 +105,23 @@ export async function POST(request: Request) {
       // Non-fatal — strategy gen still works without these
     }
 
+    // Analyze user's own Instagram page if connected
+    let instagramPageAnalysis: Parameters<typeof generateStrategy>[0]["instagramPageAnalysis"];
+    try {
+      const igCreds = await getInstagramCredentials();
+      if (igCreds) {
+        const analysis = await analyzeOwnPage(
+          { accessToken: igCreds.accessToken, igUserId: igCreds.igAccountId },
+          igCreds.followersCount || undefined
+        );
+        if (analysis) {
+          instagramPageAnalysis = analysis;
+        }
+      }
+    } catch {
+      // Non-fatal — strategy gen still works without IG page analysis
+    }
+
     const strategy = await generateStrategy({
       accountType: body.accountType || "business",
       businessName: body.businessName || "",
@@ -142,6 +161,7 @@ export async function POST(request: Request) {
         pillar: i.pillar ?? undefined,
         notes: i.notes ?? undefined,
       })) : undefined,
+      instagramPageAnalysis: instagramPageAnalysis || undefined,
       deepDiveAnswers: body.deepDiveAnswers || undefined,
       researchResults: body.researchResults || undefined,
     });

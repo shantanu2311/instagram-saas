@@ -9,7 +9,7 @@ export default function TermsPage() {
       <nav className="border-b border-border/40 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-16">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/kuraite-icon.png" alt="Kuraite" width={32} height={32} className="rounded-lg" />
+            <Image src="/kuraite-icon.svg" alt="Kuraite" width={32} height={32} className="rounded-lg" />
             <span className="font-semibold text-lg">Kuraite</span>
           </Link>
           <Link
